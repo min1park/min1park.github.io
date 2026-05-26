@@ -104,6 +104,35 @@
     color: var(--bg-elev);
   }
 
+  /* Difficulty toggle */
+  .difficulty {
+    display: flex;
+    gap: 0;
+    margin-bottom: 20px;
+    border: 1px solid var(--line);
+    background: var(--bg-elev);
+  }
+  .difficulty.hidden { display: none; }
+  .diff-btn {
+    flex: 1;
+    padding: 9px 8px;
+    background: transparent;
+    border: none;
+    color: var(--ink-soft);
+    font-family: inherit;
+    font-size: 0.78rem;
+    letter-spacing: 0.08em;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .diff-btn + .diff-btn {
+    border-left: 1px solid var(--line);
+  }
+  .diff-btn.active {
+    background: var(--gold);
+    color: var(--bg-elev);
+  }
+
   /* Status */
   .status {
     text-align: center;
@@ -269,6 +298,12 @@
       <button class="mode-btn" data-mode="2p" role="tab">2인 플레이</button>
     </div>
 
+    <div class="difficulty" id="difficultyBar" role="tablist">
+      <button class="diff-btn" data-diff="easy" role="tab">쉬움</button>
+      <button class="diff-btn" data-diff="medium" role="tab">보통</button>
+      <button class="diff-btn active" data-diff="hard" role="tab">어려움</button>
+    </div>
+
     <div class="status" id="status">당신의 차례입니다</div>
 
     <div class="board-wrap">
@@ -309,6 +344,8 @@
   const statusEl = document.getElementById('status');
   const resetBtn = document.getElementById('reset');
   const modeBtns = document.querySelectorAll('.mode-btn');
+  const diffBtns = document.querySelectorAll('.diff-btn');
+  const difficultyBar = document.getElementById('difficultyBar');
   const scoreX = document.getElementById('scoreX');
   const scoreO = document.getElementById('scoreO');
   const scoreD = document.getElementById('scoreD');
@@ -319,6 +356,7 @@
   let currentPlayer = 'X';
   let gameOver = false;
   let mode = 'ai';
+  let difficulty = 'hard';
   let scores = { X: 0, O: 0, D: 0 };
   let busy = false;
 
@@ -418,7 +456,7 @@
       busy = true;
       render();
       setTimeout(() => {
-        const idx = bestMove(board, 'O');
+        const idx = getAIMove(board, 'O');
         board[idx] = 'O';
         busy = false;
         const r2 = checkWinner(board);
@@ -461,7 +499,46 @@
     render();
   }
 
-  // Minimax — perfect AI
+  // ----- AI dispatch by difficulty -----
+  function getAIMove(b, aiMark) {
+    if (difficulty === 'easy') return randomMove(b);
+    if (difficulty === 'medium') return mediumMove(b, aiMark);
+    return bestMove(b, aiMark); // hard = perfect minimax
+  }
+
+  // Easy: completely random
+  function randomMove(b) {
+    const empty = [];
+    for (let i = 0; i < 9; i++) if (!b[i]) empty.push(i);
+    return empty[Math.floor(Math.random() * empty.length)];
+  }
+
+  // Medium: take immediate win, block immediate loss, else random
+  function mediumMove(b, aiMark) {
+    const humanMark = aiMark === 'O' ? 'X' : 'O';
+    // 1) Take a winning move
+    for (let i = 0; i < 9; i++) {
+      if (!b[i]) {
+        b[i] = aiMark;
+        const r = checkWinner(b);
+        b[i] = '';
+        if (r && r.winner === aiMark) return i;
+      }
+    }
+    // 2) Block opponent's winning move
+    for (let i = 0; i < 9; i++) {
+      if (!b[i]) {
+        b[i] = humanMark;
+        const r = checkWinner(b);
+        b[i] = '';
+        if (r && r.winner === humanMark) return i;
+      }
+    }
+    // 3) Otherwise random
+    return randomMove(b);
+  }
+
+  // Hard: perfect minimax
   function bestMove(b, player) {
     let best = { score: -Infinity, index: -1 };
     for (let i = 0; i < 9; i++) {
@@ -512,6 +589,21 @@
       modeBtns.forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       mode = btn.dataset.mode;
+      difficultyBar.classList.toggle('hidden', mode !== 'ai');
+      scores = { X: 0, O: 0, D: 0 };
+      scoreX.textContent = 0;
+      scoreO.textContent = 0;
+      scoreD.textContent = 0;
+      reset();
+    });
+  });
+
+  diffBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (btn.classList.contains('active')) return;
+      diffBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      difficulty = btn.dataset.diff;
       scores = { X: 0, O: 0, D: 0 };
       scoreX.textContent = 0;
       scoreO.textContent = 0;
