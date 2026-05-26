@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Whack-a-Mole · 두더지잡기</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;1,400;1,500&family=Noto+Serif+KR:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F5F1EA;
+    --bg-elev: #FBF8F2;
+    --ink: #1B365D;
+    --ink-deep: #0F2340;
+    --ink-mid: #2D456C;
+    --ink-soft: #5A6B82;
+    --line: #D4CCBC;
+    --gold: #B8935A;
+    --gold-deep: #A07C44;
+    --gold-soft: #D9B98A;
+    --gold-pale: #EBDEBA;
+    --danger: #B85A4A;
+    --sage: #4A7C5E;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    font-family: "EB Garamond", "Noto Serif KR", Georgia, serif;
+    background: var(--bg);
+    background-image:
+      radial-gradient(circle at 20% 10%, rgba(184, 147, 90, 0.06), transparent 40%),
+      radial-gradient(circle at 80% 90%, rgba(27, 54, 93, 0.05), transparent 40%);
+    color: var(--ink);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 16px;
+    -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    overflow-x: hidden;
+  }
+  .frame { width: 100%; max-width: 400px; position: relative; }
+
+  .header { text-align: center; margin-bottom: 22px; }
+  .eyebrow {
+    font-size: 0.7rem;
+    letter-spacing: 0.35em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin-bottom: 6px;
+  }
+  .title {
+    font-family: "EB Garamond", serif;
+    font-style: italic;
+    font-weight: 500;
+    font-size: 2.4rem;
+    line-height: 1;
+  }
+  .title::after {
+    content: "";
+    display: block;
+    width: 32px;
+    height: 1px;
+    background: var(--gold);
+    margin: 14px auto 0;
+  }
+
+  /* Stats bar */
+  .stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 1px;
+    background: var(--line);
+    border: 1px solid var(--line);
+    margin-bottom: 14px;
+  }
+  .stat-cell {
+    background: var(--bg-elev);
+    padding: 10px 6px;
+    text-align: center;
+  }
+  .stat-label {
+    font-size: 0.62rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin-bottom: 2px;
+  }
+  .stat-value {
+    font-family: "EB Garamond", serif;
+    font-size: 1.3rem;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    transition: color 0.3s ease;
+  }
+  .stat-cell.time .stat-value.urgent { color: var(--danger); animation: pulse 0.5s ease infinite alternate; }
+  @keyframes pulse {
+    from { transform: scale(1); }
+    to { transform: scale(1.08); }
+  }
+  .stat-cell.best .stat-value { color: var(--gold); font-style: italic; }
+
+  /* Difficulty */
+  .modes {
+    display: flex;
+    margin-bottom: 14px;
+    border: 1px solid var(--line);
+    background: var(--bg-elev);
+    transition: opacity 0.3s ease;
+  }
+  .modes.disabled { opacity: 0.4; pointer-events: none; }
+  .mode-btn {
+    flex: 1;
+    padding: 11px 8px;
+    background: transparent;
+    border: none;
+    color: var(--ink-soft);
+    font-family: inherit;
+    font-size: 0.82rem;
+    letter-spacing: 0.08em;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .mode-btn + .mode-btn { border-left: 1px solid var(--line); }
+  .mode-btn.active { background: var(--ink); color: var(--bg-elev); }
+
+  .status {
+    text-align: center;
+    font-size: 0.9rem;
+    font-style: italic;
+    color: var(--ink-soft);
+    min-height: 22px;
+    margin-bottom: 14px;
+    letter-spacing: 0.02em;
+  }
+  .status.go { color: var(--gold); font-style: normal; letter-spacing: 0.08em; }
+  .status.win { color: var(--gold); font-style: normal; letter-spacing: 0.1em; font-weight: 500; }
+
+  /* Board */
+  .board-wrap {
+    position: relative;
+    margin-bottom: 16px;
+  }
+  .board {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    aspect-ratio: 1;
+  }
+  .hole {
+    position: relative;
+    aspect-ratio: 1;
+    background: var(--bg-elev);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    overflow: hidden;
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+    transition: transform 0.1s ease;
+  }
+  .hole::before {
+    content: "";
+    position: absolute;
+    left: 8%;
+    right: 8%;
+    bottom: 0;
+    height: 52%;
+    background: var(--ink-deep);
+    border-radius: 50% 50% 0 0;
+    box-shadow: inset 0 6px 12px rgba(0, 0, 0, 0.4);
+  }
+  .hole::after {
+    content: "";
+    position: absolute;
+    left: 12%;
+    right: 12%;
+    bottom: 38%;
+    height: 8%;
+    background: radial-gradient(ellipse at center, rgba(184, 147, 90, 0.4), transparent 70%);
+    border-radius: 50%;
+    pointer-events: none;
+  }
+  .hole.whacked {
+    animation: holeBounce 0.2s ease;
+  }
+  @keyframes holeBounce {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(0.94); }
+  }
+
+  /* Mole */
+  .mole {
+    position: absolute;
+    bottom: -2%;
+    left: 15%;
+    width: 70%;
+    height: 70%;
+    transform: translateY(100%);
+    transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
+    z-index: 2;
+    pointer-events: none;
+  }
+  .mole.up { transform: translateY(8%); }
+  .mole.whacked {
+    transform: translateY(100%);
+    transition: transform 0.15s cubic-bezier(0.55, 0.085, 0.68, 0.53);
+  }
+  .mole svg { width: 100%; height: 100%; display: block; }
+
+  /* Hit effect */
+  .hit-burst {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 3;
+  }
+  .hit-burst.show {
+    animation: burst 0.4s ease-out forwards;
+  }
+  @keyframes burst {
+    0% { opacity: 0; transform: scale(0.5); }
+    30% { opacity: 1; }
+    100% { opacity: 0; transform: scale(1.4); }
+  }
+  .hit-burst svg { width: 100%; height: 100%; }
+
+  /* Score pop */
+  .score-pop {
+    position: absolute;
+    pointer-events: none;
+    font-family: "EB Garamond", serif;
+    font-style: italic;
+    font-weight: 500;
+    font-size: 1.4rem;
+    color: var(--gold);
+    z-index: 10;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.15);
+    animation: scorePop 0.7s ease-out forwards;
+    transform: translate(-50%, -50%);
+  }
+  @keyframes scorePop {
+    0% { opacity: 1; transform: translate(-50%, -50%) scale(0.8); }
+    30% { opacity: 1; transform: translate(-50%, -80%) scale(1.2); }
+    100% { opacity: 0; transform: translate(-50%, -160%) scale(1); }
+  }
+
+  /* Controls */
+  .controls {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .btn {
+    padding: 12px;
+    background: transparent;
+    border: 1px solid var(--ink);
+    color: var(--ink);
+    font-family: inherit;
+    font-size: 0.85rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .btn:hover, .btn:active {
+    background: var(--ink);
+    color: var(--bg-elev);
+  }
+  .btn.subtle {
+    border-color: var(--line);
+    color: var(--ink-soft);
+  }
+  .btn.subtle:hover {
+    background: var(--ink-soft);
+    color: var(--bg-elev);
+  }
+
+  .hint {
+    text-align: center;
+    font-size: 0.72rem;
+    color: var(--ink-soft);
+    letter-spacing: 0.05em;
+    line-height: 1.6;
+  }
+
+  .footer {
+    text-align: center;
+    margin-top: 18px;
+    font-size: 0.7rem;
+    letter-spacing: 0.15em;
+    color: var(--ink-soft);
+    text-transform: uppercase;
+  }
+
+  /* Overlay */
+  .overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(245, 241, 234, 0.92);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 20;
+    padding: 16px;
+    border-radius: 8px;
+    animation: fadeIn 0.3s ease;
+  }
+  .overlay.show { display: flex; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  .overlay-card {
+    background: var(--bg-elev);
+    border: 1px solid var(--gold);
+    padding: 26px 22px;
+    text-align: center;
+    max-width: 290px;
+    width: 100%;
+    position: relative;
+  }
+  .overlay-card::before, .overlay-card::after {
+    content: ""; position: absolute; width: 18px; height: 18px;
+    border: 1px solid var(--gold);
+  }
+  .overlay-card::before { top: -1px; left: -1px; border-right: none; border-bottom: none; }
+  .overlay-card::after { bottom: -1px; right: -1px; border-left: none; border-top: none; }
+  .overlay-eyebrow {
+    font-size: 0.65rem;
+    letter-spacing: 0.35em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin-bottom: 8px;
+  }
+  .overlay-title {
+    font-family: "EB Garamond", serif;
+    font-style: italic;
+    font-size: 1.7rem;
+    color: var(--gold);
+    margin-bottom: 14px;
+    line-height: 1.2;
+  }
+  .overlay-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+  .overlay-stats .ov-stat {
+    text-align: center;
+  }
+  .overlay-stats .ov-label {
+    font-size: 0.6rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin-bottom: 4px;
+  }
+  .overlay-stats .ov-value {
+    font-family: "EB Garamond", serif;
+    font-weight: 500;
+    color: var(--ink);
+    font-size: 1.4rem;
+    font-variant-numeric: tabular-nums;
+  }
+  .overlay-record {
+    color: var(--gold);
+    font-style: italic;
+    font-size: 0.85rem;
+    margin-bottom: 12px;
+  }
+  .overlay-btn {
+    width: 100%;
+    padding: 11px;
+    border: 1px solid var(--ink);
+    background: var(--ink);
+    color: var(--bg-elev);
+    font-family: inherit;
+    font-size: 0.82rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background 0.2s ease;
+  }
+  .overlay-btn:hover { background: var(--gold); border-color: var(--gold); }
+
+  /* Countdown */
+  .countdown {
+    position: absolute;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 15;
+    background: rgba(245, 241, 234, 0.85);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+    border-radius: 8px;
+  }
+  .countdown.show { display: flex; }
+  .countdown-num {
+    font-family: "EB Garamond", serif;
+    font-style: italic;
+    font-size: 6rem;
+    color: var(--gold);
+    line-height: 1;
+    animation: countNum 0.9s ease;
+  }
+  @keyframes countNum {
+    0% { transform: scale(0.3); opacity: 0; }
+    30% { transform: scale(1.1); opacity: 1; }
+    80% { transform: scale(1); opacity: 1; }
+    100% { transform: scale(1.4); opacity: 0; }
+  }
+</style>
+</head>
+<body>
+  <div class="frame">
+    <header class="header">
+      <div class="eyebrow">Game · No. 08</div>
+      <h1 class="title">Whack-a-Mole</h1>
+    </header>
+
+    <div class="stats">
+      <div class="stat-cell">
+        <div class="stat-label">Score</div>
+        <div class="stat-value" id="score">0</div>
+      </div>
+      <div class="stat-cell time">
+        <div class="stat-label">Time</div>
+        <div class="stat-value" id="time">30</div>
+      </div>
+      <div class="stat-cell best">
+        <div class="stat-label">Best</div>
+        <div class="stat-value" id="best">0</div>
+      </div>
+    </div>
+
+    <div class="modes" id="modes" role="tablist">
+      <button class="mode-btn active" data-diff="easy">쉬움</button>
+      <button class="mode-btn" data-diff="medium">보통</button>
+      <button class="mode-btn" data-diff="hard">어려움</button>
+    </div>
+
+    <div class="status" id="status">시작 버튼을 누르세요</div>
+
+    <div class="board-wrap">
+      <div class="board" id="board"></div>
+      <div class="countdown" id="countdown">
+        <div class="countdown-num" id="countdownNum">3</div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button class="btn" id="startBtn">시작</button>
+      <button class="btn subtle" id="resetBtn">초기화</button>
+    </div>
+
+    <div class="hint">
+      30초 안에 튀어나오는 두더지를 빠르게 탭하세요
+    </div>
+
+    <div class="footer">— Min1 Park · 2026 —</div>
+  </div>
+
+  <!-- Overlay (game over) -->
+  <div class="overlay" id="overlay">
+    <div class="overlay-card">
+      <div class="overlay-eyebrow" id="ovEyebrow">Time's Up</div>
+      <div class="overlay-title" id="ovTitle">결과</div>
+      <div class="overlay-stats">
+        <div class="ov-stat">
+          <div class="ov-label">Score</div>
+          <div class="ov-value" id="ovScore">0</div>
+        </div>
+        <div class="ov-stat">
+          <div class="ov-label">Accuracy</div>
+          <div class="ov-value" id="ovAcc">0%</div>
+        </div>
+        <div class="ov-stat">
+          <div class="ov-label">Hits</div>
+          <div class="ov-value" id="ovHits">0</div>
+        </div>
+        <div class="ov-stat">
+          <div class="ov-label">Missed</div>
+          <div class="ov-value" id="ovMiss">0</div>
+        </div>
+      </div>
+      <div class="overlay-record" id="ovRecord" style="display:none;">최고 기록 갱신</div>
+      <button class="overlay-btn" id="ovBtn">다시 도전</button>
+    </div>
+  </div>
+
+<script>
+  // === SVG character definitions ===
+  const MOLE_SVG = `
+    <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+      <!-- ears -->
+      <ellipse cx="22" cy="38" rx="9" ry="11" fill="#A07C44"/>
+      <ellipse cx="78" cy="38" rx="9" ry="11" fill="#A07C44"/>
+      <ellipse cx="22" cy="40" rx="5" ry="6" fill="#5A3D2C"/>
+      <ellipse cx="78" cy="40" rx="5" ry="6" fill="#5A3D2C"/>
+      <!-- head -->
+      <ellipse cx="50" cy="55" rx="36" ry="34" fill="#A07C44"/>
+      <!-- face (lighter) -->
+      <ellipse cx="50" cy="62" rx="26" ry="22" fill="#D9B98A"/>
+      <!-- eye whites -->
+      <ellipse cx="38" cy="50" rx="5" ry="6" fill="#FBF8F2"/>
+      <ellipse cx="62" cy="50" rx="5" ry="6" fill="#FBF8F2"/>
+      <!-- pupils -->
+      <circle cx="38" cy="51" r="2.4" fill="#1B365D"/>
+      <circle cx="62" cy="51" r="2.4" fill="#1B365D"/>
+      <!-- eye highlights -->
+      <circle cx="37" cy="50" r="0.8" fill="#FBF8F2"/>
+      <circle cx="61" cy="50" r="0.8" fill="#FBF8F2"/>
+      <!-- nose -->
+      <ellipse cx="50" cy="64" rx="4.5" ry="3.5" fill="#B85A4A"/>
+      <!-- mouth -->
+      <path d="M 50 70 Q 44 76 40 74" stroke="#1B365D" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+      <path d="M 50 70 Q 56 76 60 74" stroke="#1B365D" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+      <!-- whiskers -->
+      <path d="M 26 64 L 14 60" stroke="#5A3D2C" stroke-width="1" stroke-linecap="round"/>
+      <path d="M 26 67 L 14 67" stroke="#5A3D2C" stroke-width="1" stroke-linecap="round"/>
+      <path d="M 74 64 L 86 60" stroke="#5A3D2C" stroke-width="1" stroke-linecap="round"/>
+      <path d="M 74 67 L 86 67" stroke="#5A3D2C" stroke-width="1" stroke-linecap="round"/>
+      <!-- two front teeth -->
+      <rect x="47" y="71" width="2.4" height="4" fill="#FBF8F2" rx="0.5"/>
+      <rect x="50.6" y="71" width="2.4" height="4" fill="#FBF8F2" rx="0.5"/>
+    </svg>`;
+
+  const BURST_SVG = `
+    <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+      <g stroke="#B8935A" stroke-width="2.5" stroke-linecap="round" fill="none">
+        <line x1="50" y1="20" x2="50" y2="8"/>
+        <line x1="50" y1="92" x2="50" y2="80"/>
+        <line x1="20" y1="50" x2="8" y2="50"/>
+        <line x1="92" y1="50" x2="80" y2="50"/>
+        <line x1="28" y1="28" x2="18" y2="18"/>
+        <line x1="72" y1="28" x2="82" y2="18"/>
+        <line x1="28" y1="72" x2="18" y2="82"/>
+        <line x1="72" y1="72" x2="82" y2="82"/>
+      </g>
+      <circle cx="50" cy="50" r="14" fill="#B8935A" opacity="0.18"/>
+    </svg>`;
+
+  // === Difficulty config ===
+  const DIFFS = {
+    easy:   { gameTime: 30, moleDuration: 1400, spawnInterval: 1100, maxActive: 2 },
+    medium: { gameTime: 30, moleDuration:  950, spawnInterval:  800, maxActive: 2 },
+    hard:   { gameTime: 30, moleDuration:  650, spawnInterval:  550, maxActive: 3 },
+  };
+
+  // === DOM ===
+  const boardEl = document.getElementById('board');
+  const scoreEl = document.getElementById('score');
+  const timeEl = document.getElementById('time');
+  const bestEl = document.getElementById('best');
+  const statusEl = document.getElementById('status');
+  const modesEl = document.getElementById('modes');
+  const modeBtns = document.querySelectorAll('.mode-btn');
+  const startBtn = document.getElementById('startBtn');
+  const resetBtn = document.getElementById('resetBtn');
+  const overlay = document.getElementById('overlay');
+  const ovEyebrow = document.getElementById('ovEyebrow');
+  const ovTitle = document.getElementById('ovTitle');
+  const ovScore = document.getElementById('ovScore');
+  const ovAcc = document.getElementById('ovAcc');
+  const ovHits = document.getElementById('ovHits');
+  const ovMiss = document.getElementById('ovMiss');
+  const ovRecord = document.getElementById('ovRecord');
+  const ovBtn = document.getElementById('ovBtn');
+  const countdown = document.getElementById('countdown');
+  const countdownNum = document.getElementById('countdownNum');
+  const timeStatCell = document.querySelector('.stat-cell.time');
+
+  // === State ===
+  const HOLES = 9;
+  let holes = []; // { el, mole, burst, active, expireAt }
+  let difficulty = 'easy';
+  let conf = DIFFS.easy;
+  let state = 'ready'; // ready | counting | playing | over
+  let score = 0;
+  let hits = 0;
+  let missed = 0;
+  let totalSpawned = 0;
+  let timeLeft = 30;
+  let gameTimerId = null;
+  let lastSpawn = 0;
+  let rafId = null;
+
+  function loadBest() {
+    try { return parseInt(localStorage.getItem(`gwhack-best-${difficulty}`) || '0') || 0; }
+    catch (e) { return 0; }
+  }
+  function saveBest(v) {
+    try { localStorage.setItem(`gwhack-best-${difficulty}`, String(v)); } catch (e) {}
+  }
+
+  function buildBoard() {
+    boardEl.innerHTML = '';
+    holes = [];
+    for (let i = 0; i < HOLES; i++) {
+      const hole = document.createElement('div');
+      hole.className = 'hole';
+      const mole = document.createElement('div');
+      mole.className = 'mole';
+      mole.innerHTML = MOLE_SVG;
+      const burst = document.createElement('div');
+      burst.className = 'hit-burst';
+      burst.innerHTML = BURST_SVG;
+      hole.appendChild(mole);
+      hole.appendChild(burst);
+      boardEl.appendChild(hole);
+
+      const obj = { el: hole, mole, burst, active: false, expireAt: 0 };
+      holes.push(obj);
+
+      hole.addEventListener('click', (e) => whack(obj, e));
+      // Make touch responsive (avoid 300ms tap delay etc)
+      hole.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        whack(obj, e.touches[0] || e);
+      }, { passive: false });
+    }
+  }
+
+  function init() {
+    state = 'ready';
+    score = 0;
+    hits = 0;
+    missed = 0;
+    totalSpawned = 0;
+    timeLeft = conf.gameTime;
+    scoreEl.textContent = 0;
+    timeEl.textContent = timeLeft;
+    timeEl.classList.remove('urgent');
+    bestEl.textContent = loadBest();
+    statusEl.textContent = '시작 버튼을 누르세요';
+    statusEl.className = 'status';
+    overlay.classList.remove('show');
+    countdown.classList.remove('show');
+    modesEl.classList.remove('disabled');
+    startBtn.textContent = '시작';
+    holes.forEach(h => {
+      h.active = false;
+      h.mole.classList.remove('up', 'whacked');
+      h.burst.classList.remove('show');
+    });
+    if (gameTimerId) { clearInterval(gameTimerId); gameTimerId = null; }
+    if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+  }
+
+  function startCountdown() {
+    if (state === 'counting' || state === 'playing') return;
+    state = 'counting';
+    modesEl.classList.add('disabled');
+    statusEl.textContent = '준비…';
+    statusEl.className = 'status';
+    startBtn.textContent = '진행 중';
+    let n = 3;
+    countdown.classList.add('show');
+    countdownNum.textContent = n;
+    countdownNum.style.animation = 'none';
+    void countdownNum.offsetWidth; // restart animation
+    countdownNum.style.animation = '';
+
+    const tick = () => {
+      n--;
+      if (n > 0) {
+        countdownNum.textContent = n;
+        countdownNum.style.animation = 'none';
+        void countdownNum.offsetWidth;
+        countdownNum.style.animation = '';
+        setTimeout(tick, 900);
+      } else {
+        countdownNum.textContent = '시작!';
+        countdownNum.style.animation = 'none';
+        void countdownNum.offsetWidth;
+        countdownNum.style.animation = '';
+        setTimeout(() => {
+          countdown.classList.remove('show');
+          startGame();
+        }, 600);
+      }
+    };
+    setTimeout(tick, 900);
+  }
+
+  function startGame() {
+    state = 'playing';
+    statusEl.textContent = '진행 중';
+    statusEl.className = 'status go';
+    lastSpawn = performance.now() - conf.spawnInterval + 200; // first spawn ~200ms in
+    gameTimerId = setInterval(() => {
+      timeLeft--;
+      timeEl.textContent = timeLeft;
+      if (timeLeft <= 5) timeEl.classList.add('urgent');
+      if (timeLeft <= 0) endGame();
+    }, 1000);
+    rafId = requestAnimationFrame(loop);
+  }
+
+  function loop(ts) {
+    if (state !== 'playing') return;
+
+    // Expire moles whose time is up
+    for (const h of holes) {
+      if (h.active && ts >= h.expireAt) {
+        h.active = false;
+        h.mole.classList.remove('up');
+        missed++;
+      }
+    }
+
+    // Spawn new moles
+    if (ts - lastSpawn >= conf.spawnInterval) {
+      const activeCount = holes.filter(h => h.active).length;
+      if (activeCount < conf.maxActive) {
+        const candidates = holes.filter(h => !h.active);
+        if (candidates.length > 0) {
+          const target = candidates[Math.floor(Math.random() * candidates.length)];
+          target.active = true;
+          // Add slight randomness to mole duration (±20%)
+          const variance = conf.moleDuration * 0.2;
+          const dur = conf.moleDuration + (Math.random() * 2 - 1) * variance;
+          target.expireAt = ts + dur;
+          target.mole.classList.remove('whacked');
+          target.mole.classList.add('up');
+          totalSpawned++;
+        }
+      }
+      lastSpawn = ts;
+    }
+
+    rafId = requestAnimationFrame(loop);
+  }
+
+  function whack(hole, ev) {
+    if (state !== 'playing') return;
+    if (!hole.active) return;
+    hole.active = false;
+    hole.mole.classList.remove('up');
+    hole.mole.classList.add('whacked');
+    setTimeout(() => hole.mole.classList.remove('whacked'), 200);
+    hole.el.classList.add('whacked');
+    setTimeout(() => hole.el.classList.remove('whacked'), 200);
+
+    // Burst
+    hole.burst.classList.remove('show');
+    void hole.burst.offsetWidth;
+    hole.burst.classList.add('show');
+
+    hits++;
+    score += 10;
+    scoreEl.textContent = score;
+    // Score pop where clicked
+    showScorePop(hole.el, 10);
+
+    if (navigator.vibrate) navigator.vibrate(15);
+  }
+
+  function showScorePop(holeEl, value) {
+    const rect = holeEl.getBoundingClientRect();
+    const frameRect = document.querySelector('.frame').getBoundingClientRect();
+    const x = rect.left - frameRect.left + rect.width / 2;
+    const y = rect.top - frameRect.top + rect.height * 0.3;
+    const pop = document.createElement('div');
+    pop.className = 'score-pop';
+    pop.textContent = `+${value}`;
+    pop.style.left = `${x}px`;
+    pop.style.top = `${y}px`;
+    document.querySelector('.frame').appendChild(pop);
+    setTimeout(() => pop.remove(), 700);
+  }
+
+  function endGame() {
+    state = 'over';
+    if (gameTimerId) { clearInterval(gameTimerId); gameTimerId = null; }
+    if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+    // Hide all moles
+    holes.forEach(h => {
+      if (h.active) {
+        h.active = false;
+        h.mole.classList.remove('up');
+      }
+    });
+    statusEl.textContent = '시간 종료';
+    statusEl.className = 'status';
+    startBtn.textContent = '다시 시작';
+
+    // Best score check
+    const prev = loadBest();
+    const isRecord = score > prev;
+    if (isRecord) {
+      saveBest(score);
+      bestEl.textContent = score;
+    }
+
+    // Show results
+    const acc = totalSpawned === 0 ? 0 : Math.round(hits / totalSpawned * 100);
+    ovScore.textContent = score;
+    ovAcc.textContent = `${acc}%`;
+    ovHits.textContent = hits;
+    ovMiss.textContent = missed;
+    ovRecord.style.display = isRecord && score > 0 ? '' : 'none';
+    setTimeout(() => overlay.classList.add('show'), 400);
+  }
+
+  // === Mode buttons ===
+  modeBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (btn.classList.contains('active')) return;
+      if (state === 'counting' || state === 'playing') return;
+      modeBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      difficulty = btn.dataset.diff;
+      conf = DIFFS[difficulty];
+      timeLeft = conf.gameTime;
+      timeEl.textContent = timeLeft;
+      bestEl.textContent = loadBest();
+    });
+  });
+
+  startBtn.addEventListener('click', () => {
+    if (state === 'ready' || state === 'over') {
+      if (state === 'over') init();
+      startCountdown();
+    }
+  });
+
+  resetBtn.addEventListener('click', () => init());
+  ovBtn.addEventListener('click', () => {
+    overlay.classList.remove('show');
+    init();
+    startCountdown();
+  });
+
+  // Boot
+  buildBoard();
+  init();
+</script>
+</body>
+</html>

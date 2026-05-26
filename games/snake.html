@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Snake · 스네이크</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=Noto+Serif+KR:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F5F1EA;
+    --bg-elev: #FBF8F2;
+    --ink: #1B365D;
+    --ink-mid: #2D456C;
+    --ink-soft: #5A6B82;
+    --line: #D4CCBC;
+    --gold: #B8935A;
+    --gold-soft: #D9B98A;
+    --danger: #B85A4A;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    font-family: "EB Garamond", "Noto Serif KR", Georgia, serif;
+    background: var(--bg);
+    background-image:
+      radial-gradient(circle at 20% 10%, rgba(184, 147, 90, 0.06), transparent 40%),
+      radial-gradient(circle at 80% 90%, rgba(27, 54, 93, 0.05), transparent 40%);
+    color: var(--ink);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 16px;
+    -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+  .frame { width: 100%; max-width: 400px; }
+
+  .header { text-align: center; margin-bottom: 22px; }
+  .eyebrow {
+    font-size: 0.7rem;
+    letter-spacing: 0.35em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin-bottom: 6px;
+  }
+  .title {
+    font-family: "EB Garamond", serif;
+    font-style: italic;
+    font-weight: 500;
+    font-size: 2.4rem;
+    line-height: 1;
+  }
+  .title::after {
+    content: "";
+    display: block;
+    width: 32px;
+    height: 1px;
+    background: var(--gold);
+    margin: 14px auto 0;
+  }
+
+  .scores {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 1px;
+    background: var(--line);
+    border: 1px solid var(--line);
+    margin-bottom: 14px;
+  }
+  .score-cell {
+    background: var(--bg-elev);
+    padding: 10px 6px;
+    text-align: center;
+  }
+  .score-label {
+    font-size: 0.62rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin-bottom: 2px;
+  }
+  .score-value {
+    font-family: "EB Garamond", serif;
+    font-size: 1.3rem;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+  }
+  .score-cell.best .score-value { color: var(--gold); font-style: italic; }
+
+  .status {
+    text-align: center;
+    font-size: 0.88rem;
+    font-style: italic;
+    color: var(--ink-soft);
+    min-height: 22px;
+    margin-bottom: 12px;
+    letter-spacing: 0.02em;
+  }
+  .status.go { color: var(--gold); font-style: normal; letter-spacing: 0.08em; }
+  .status.danger { color: var(--danger); font-style: normal; }
+
+  .board-wrap {
+    position: relative;
+    aspect-ratio: 1;
+    border: 1px solid var(--line);
+    background: var(--bg-elev);
+    margin-bottom: 14px;
+    overflow: hidden;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  /* Pause / start overlay */
+  .overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(245, 241, 234, 0.88);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    z-index: 5;
+    animation: fadeIn 0.3s ease;
+  }
+  .overlay.show { display: flex; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+  .overlay-card {
+    background: var(--bg-elev);
+    border: 1px solid var(--gold);
+    padding: 26px 22px;
+    text-align: center;
+    max-width: 280px;
+    width: 100%;
+    position: relative;
+  }
+  .overlay-card::before, .overlay-card::after {
+    content: "";
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    border: 1px solid var(--gold);
+  }
+  .overlay-card::before { top: -1px; left: -1px; border-right: none; border-bottom: none; }
+  .overlay-card::after { bottom: -1px; right: -1px; border-left: none; border-top: none; }
+  .overlay-eyebrow {
+    font-size: 0.65rem;
+    letter-spacing: 0.35em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin-bottom: 8px;
+  }
+  .overlay-title {
+    font-family: "EB Garamond", serif;
+    font-style: italic;
+    font-size: 1.7rem;
+    color: var(--gold);
+    margin-bottom: 14px;
+    line-height: 1.2;
+  }
+  .overlay.start .overlay-title { color: var(--ink); font-style: normal; }
+  .overlay.gameover .overlay-title { color: var(--ink); font-style: normal; }
+  .overlay-stat {
+    font-size: 0.85rem;
+    color: var(--ink-soft);
+    margin-bottom: 16px;
+    line-height: 1.5;
+  }
+  .overlay-stat strong {
+    font-family: "EB Garamond", serif;
+    font-weight: 500;
+    color: var(--ink);
+    font-size: 1.1rem;
+  }
+  .overlay-btn {
+    width: 100%;
+    padding: 11px;
+    border: 1px solid var(--ink);
+    background: var(--ink);
+    color: var(--bg-elev);
+    font-family: inherit;
+    font-size: 0.82rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background 0.2s ease;
+  }
+  .overlay-btn:hover { background: var(--gold); border-color: var(--gold); }
+
+  .controls {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .btn {
+    padding: 12px;
+    background: transparent;
+    border: 1px solid var(--ink);
+    color: var(--ink);
+    font-family: inherit;
+    font-size: 0.85rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .btn:hover, .btn:active {
+    background: var(--ink);
+    color: var(--bg-elev);
+  }
+  .btn.subtle {
+    border-color: var(--line);
+    color: var(--ink-soft);
+  }
+  .btn.subtle:hover {
+    background: var(--ink-soft);
+    color: var(--bg-elev);
+  }
+
+  .hint {
+    text-align: center;
+    font-size: 0.72rem;
+    color: var(--ink-soft);
+    letter-spacing: 0.08em;
+    line-height: 1.6;
+  }
+  .kbd {
+    display: inline-block;
+    padding: 1px 5px;
+    border: 1px solid var(--line);
+    background: var(--bg-elev);
+    font-family: "EB Garamond", serif;
+    font-size: 0.75rem;
+    margin: 0 1px;
+  }
+
+  .footer {
+    text-align: center;
+    margin-top: 18px;
+    font-size: 0.7rem;
+    letter-spacing: 0.15em;
+    color: var(--ink-soft);
+    text-transform: uppercase;
+  }
+</style>
+</head>
+<body>
+  <div class="frame">
+    <header class="header">
+      <div class="eyebrow">Game · No. 04</div>
+      <h1 class="title">Snake</h1>
+    </header>
+
+    <div class="scores">
+      <div class="score-cell">
+        <div class="score-label">Score</div>
+        <div class="score-value" id="score">0</div>
+      </div>
+      <div class="score-cell">
+        <div class="score-label">Length</div>
+        <div class="score-value" id="length">3</div>
+      </div>
+      <div class="score-cell best">
+        <div class="score-label">Best</div>
+        <div class="score-value" id="best">0</div>
+      </div>
+    </div>
+
+    <div class="status" id="status">방향을 입력하면 시작됩니다</div>
+
+    <div class="board-wrap">
+      <canvas id="canvas"></canvas>
+      <div class="overlay start show" id="overlay">
+        <div class="overlay-card">
+          <div class="overlay-eyebrow" id="overlayEyebrow">Ready</div>
+          <div class="overlay-title" id="overlayTitle">시작 준비</div>
+          <div class="overlay-stat" id="overlayStat">
+            방향키나 스와이프로 시작하세요
+          </div>
+          <button class="overlay-btn" id="overlayBtn">시작</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button class="btn" id="newGame">새 게임</button>
+      <button class="btn subtle" id="pauseBtn">일시정지</button>
+    </div>
+
+    <div class="hint">
+      방향키 <span class="kbd">↑</span><span class="kbd">↓</span><span class="kbd">←</span><span class="kbd">→</span> · 스와이프 · 일시정지 <span class="kbd">Space</span>
+    </div>
+
+    <div class="footer">— Min1 Park · 2026 —</div>
+  </div>
+
+<script>
+  // === Setup ===
+  const canvas = document.getElementById('canvas');
+  const ctx = canvas.getContext('2d');
+  const scoreEl = document.getElementById('score');
+  const lengthEl = document.getElementById('length');
+  const bestEl = document.getElementById('best');
+  const statusEl = document.getElementById('status');
+  const overlay = document.getElementById('overlay');
+  const overlayEyebrow = document.getElementById('overlayEyebrow');
+  const overlayTitle = document.getElementById('overlayTitle');
+  const overlayStat = document.getElementById('overlayStat');
+  const overlayBtn = document.getElementById('overlayBtn');
+  const newGameBtn = document.getElementById('newGame');
+  const pauseBtn = document.getElementById('pauseBtn');
+  const boardWrap = document.querySelector('.board-wrap');
+
+  const GRID = 18; // 18x18 cells
+  let CANVAS_PX = 360; // logical pixels, recalculated on resize
+  let CELL = CANVAS_PX / GRID;
+  let dpr = window.devicePixelRatio || 1;
+
+  // CSS color values
+  const styles = getComputedStyle(document.documentElement);
+  const COL = {
+    bg: styles.getPropertyValue('--bg-elev').trim(),
+    line: styles.getPropertyValue('--line').trim(),
+    ink: styles.getPropertyValue('--ink').trim(),
+    inkMid: styles.getPropertyValue('--ink-mid').trim(),
+    gold: styles.getPropertyValue('--gold').trim(),
+    goldSoft: styles.getPropertyValue('--gold-soft').trim(),
+    danger: styles.getPropertyValue('--danger').trim(),
+  };
+
+  function resizeCanvas() {
+    const rect = boardWrap.getBoundingClientRect();
+    CANVAS_PX = Math.floor(rect.width);
+    CELL = CANVAS_PX / GRID;
+    dpr = window.devicePixelRatio || 1;
+    canvas.width = CANVAS_PX * dpr;
+    canvas.height = CANVAS_PX * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    draw();
+  }
+  window.addEventListener('resize', resizeCanvas);
+
+  // === Game state ===
+  let snake = [];
+  let dir = { x: 1, y: 0 };
+  let nextDirs = []; // queue of pending direction changes
+  let food = { x: 0, y: 0 };
+  let score = 0;
+  let best = 0;
+  let speed = 150; // ms between ticks
+  const SPEED_MIN = 70;
+  let running = false;
+  let gameOver = false;
+  let started = false;
+  let lastTick = 0;
+  let flashTimer = 0; // for game over flash
+  let rafId = null;
+
+  function loadBest() {
+    try { return parseInt(localStorage.getItem('gsnake-best') || '0') || 0; }
+    catch (e) { return 0; }
+  }
+  function saveBest(v) {
+    try { localStorage.setItem('gsnake-best', String(v)); } catch (e) {}
+  }
+
+  function init() {
+    snake = [
+      { x: 9, y: 9 },
+      { x: 8, y: 9 },
+      { x: 7, y: 9 },
+    ];
+    dir = { x: 1, y: 0 };
+    nextDirs = [];
+    score = 0;
+    speed = 150;
+    running = false;
+    gameOver = false;
+    started = false;
+    flashTimer = 0;
+    best = loadBest();
+    bestEl.textContent = best;
+    placeFood();
+    updateScore();
+    showStartOverlay();
+    statusEl.textContent = '방향을 입력하면 시작됩니다';
+    statusEl.className = 'status';
+    pauseBtn.textContent = '일시정지';
+    draw();
+    if (rafId) cancelAnimationFrame(rafId);
+    rafId = requestAnimationFrame(loop);
+  }
+
+  function placeFood() {
+    while (true) {
+      const x = Math.floor(Math.random() * GRID);
+      const y = Math.floor(Math.random() * GRID);
+      if (!snake.some(s => s.x === x && s.y === y)) {
+        food = { x, y };
+        return;
+      }
+    }
+  }
+
+  function updateScore() {
+    scoreEl.textContent = score;
+    lengthEl.textContent = snake.length;
+  }
+
+  // === Direction input ===
+  function tryChangeDirection(nd) {
+    // Use the last queued (or current) direction to check opposition
+    const lastDir = nextDirs.length > 0 ? nextDirs[nextDirs.length - 1] : dir;
+    if (nd.x === -lastDir.x && nd.y === -lastDir.y) return; // can't reverse
+    if (nd.x === lastDir.x && nd.y === lastDir.y) return;   // no change
+    nextDirs.push(nd);
+    if (nextDirs.length > 2) nextDirs.shift(); // max queue 2
+
+    if (!started && !gameOver) startGame();
+    else if (!running && !gameOver && started) {
+      // resume from pause
+      resume();
+    }
+  }
+
+  function startGame() {
+    started = true;
+    running = true;
+    lastTick = performance.now();
+    hideOverlay();
+    statusEl.textContent = '진행 중';
+    statusEl.className = 'status go';
+  }
+
+  function pause() {
+    if (!running || gameOver) return;
+    running = false;
+    statusEl.textContent = '일시정지';
+    statusEl.className = 'status';
+    pauseBtn.textContent = '재개';
+    showPauseOverlay();
+  }
+
+  function resume() {
+    if (gameOver || !started) return;
+    running = true;
+    lastTick = performance.now();
+    statusEl.textContent = '진행 중';
+    statusEl.className = 'status go';
+    pauseBtn.textContent = '일시정지';
+    hideOverlay();
+  }
+
+  function togglePause() {
+    if (!started || gameOver) return;
+    if (running) pause(); else resume();
+  }
+
+  // === Game loop ===
+  function loop(ts) {
+    if (running && ts - lastTick >= speed) {
+      lastTick = ts;
+      step();
+    }
+    if (flashTimer > 0) flashTimer--;
+    draw();
+    rafId = requestAnimationFrame(loop);
+  }
+
+  function step() {
+    if (nextDirs.length > 0) dir = nextDirs.shift();
+
+    const head = snake[0];
+    const newHead = { x: head.x + dir.x, y: head.y + dir.y };
+
+    // Wall
+    if (newHead.x < 0 || newHead.x >= GRID || newHead.y < 0 || newHead.y >= GRID) {
+      return endGame();
+    }
+    // Self (allow moving into where tail will be, so check excluding last segment when not eating)
+    const willEat = newHead.x === food.x && newHead.y === food.y;
+    const bodyToCheck = willEat ? snake : snake.slice(0, -1);
+    if (bodyToCheck.some(s => s.x === newHead.x && s.y === newHead.y)) {
+      return endGame();
+    }
+
+    snake.unshift(newHead);
+    if (willEat) {
+      score += 10;
+      placeFood();
+      if (speed > SPEED_MIN) speed = Math.max(SPEED_MIN, speed - 4);
+    } else {
+      snake.pop();
+    }
+    updateScore();
+  }
+
+  function endGame() {
+    running = false;
+    gameOver = true;
+    flashTimer = 6; // ~6 frames of red flash
+    if (score > best) {
+      best = score;
+      bestEl.textContent = best;
+      saveBest(best);
+    }
+    statusEl.textContent = '게임 오버';
+    statusEl.className = 'status danger';
+    setTimeout(() => showGameOverOverlay(), 600);
+  }
+
+  // === Drawing ===
+  function roundRect(x, y, w, h, r) {
+    if (r > w / 2) r = w / 2;
+    if (r > h / 2) r = h / 2;
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    ctx.lineTo(x + r, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
+  }
+
+  function draw() {
+    // Background
+    ctx.fillStyle = COL.bg;
+    ctx.fillRect(0, 0, CANVAS_PX, CANVAS_PX);
+
+    // Grid (subtle)
+    ctx.strokeStyle = COL.line;
+    ctx.globalAlpha = 0.35;
+    ctx.lineWidth = 0.5;
+    for (let i = 1; i < GRID; i++) {
+      const p = i * CELL;
+      ctx.beginPath();
+      ctx.moveTo(p, 0); ctx.lineTo(p, CANVAS_PX);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(0, p); ctx.lineTo(CANVAS_PX, p);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+
+    // Food with pulse
+    const t = performance.now() / 400;
+    const pulse = 1 + Math.sin(t) * 0.08;
+    const cx = food.x * CELL + CELL / 2;
+    const cy = food.y * CELL + CELL / 2;
+    const baseR = CELL * 0.3;
+    // outer ring
+    ctx.strokeStyle = COL.gold;
+    ctx.globalAlpha = 0.35;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.arc(cx, cy, baseR * 1.5 * pulse, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+    // solid
+    ctx.fillStyle = COL.gold;
+    ctx.beginPath();
+    ctx.arc(cx, cy, baseR * pulse, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Snake
+    const flash = flashTimer > 0 && flashTimer % 2 === 0;
+    snake.forEach((seg, i) => {
+      const pad = 1.5;
+      const isHead = i === 0;
+      let color;
+      if (flash) color = COL.danger;
+      else if (isHead) color = COL.ink;
+      else color = COL.inkMid;
+      ctx.fillStyle = color;
+      const radius = isHead ? CELL * 0.28 : CELL * 0.18;
+      roundRect(seg.x * CELL + pad, seg.y * CELL + pad, CELL - 2 * pad, CELL - 2 * pad, radius);
+      ctx.fill();
+    });
+
+    // Head eyes
+    if (snake.length > 0 && !flash) {
+      const head = snake[0];
+      const hx = head.x * CELL + CELL / 2;
+      const hy = head.y * CELL + CELL / 2;
+      ctx.fillStyle = COL.gold;
+      const eyeR = Math.max(1, CELL * 0.07);
+      const off = CELL * 0.18;
+      // Eyes positioned based on direction
+      let ex1 = hx, ey1 = hy, ex2 = hx, ey2 = hy;
+      if (dir.x !== 0) {
+        ex1 = hx + dir.x * off; ey1 = hy - off;
+        ex2 = hx + dir.x * off; ey2 = hy + off;
+      } else {
+        ex1 = hx - off; ey1 = hy + dir.y * off;
+        ex2 = hx + off; ey2 = hy + dir.y * off;
+      }
+      ctx.beginPath(); ctx.arc(ex1, ey1, eyeR, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(ex2, ey2, eyeR, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+
+  // === Overlays ===
+  function showStartOverlay() {
+    overlay.className = 'overlay start show';
+    overlayEyebrow.textContent = 'Ready';
+    overlayTitle.textContent = '시작 준비';
+    overlayStat.innerHTML = '방향키나 스와이프로 시작하세요';
+    overlayBtn.textContent = '시작';
+    overlayBtn.onclick = () => { dir = { x: 1, y: 0 }; nextDirs = []; startGame(); };
+  }
+  function showPauseOverlay() {
+    overlay.className = 'overlay show';
+    overlayEyebrow.textContent = 'Paused';
+    overlayTitle.textContent = '일시정지';
+    overlayStat.innerHTML = `Score · <strong>${score}</strong>`;
+    overlayBtn.textContent = '재개';
+    overlayBtn.onclick = () => resume();
+  }
+  function showGameOverOverlay() {
+    overlay.className = 'overlay gameover show';
+    overlayEyebrow.textContent = 'Game Over';
+    overlayTitle.textContent = '게임 오버';
+    const isRecord = score > 0 && score === best;
+    overlayStat.innerHTML = `Score · <strong>${score}</strong>` +
+      (isRecord ? '<br><span style="color:var(--gold);font-style:italic;">최고 점수 갱신</span>' : '');
+    overlayBtn.textContent = '다시 시작';
+    overlayBtn.onclick = () => init();
+  }
+  function hideOverlay() { overlay.classList.remove('show'); }
+
+  // === Input ===
+  window.addEventListener('keydown', (e) => {
+    const map = {
+      'ArrowUp': { x: 0, y: -1 }, 'w': { x: 0, y: -1 }, 'W': { x: 0, y: -1 },
+      'ArrowDown': { x: 0, y: 1 }, 's': { x: 0, y: 1 }, 'S': { x: 0, y: 1 },
+      'ArrowLeft': { x: -1, y: 0 }, 'a': { x: -1, y: 0 }, 'A': { x: -1, y: 0 },
+      'ArrowRight': { x: 1, y: 0 }, 'd': { x: 1, y: 0 }, 'D': { x: 1, y: 0 },
+    };
+    if (map[e.key]) {
+      e.preventDefault();
+      tryChangeDirection(map[e.key]);
+    } else if (e.key === ' ' || e.key === 'Spacebar') {
+      e.preventDefault();
+      togglePause();
+    } else if (e.key === 'r' || e.key === 'R') {
+      init();
+    }
+  });
+
+  // Touch / swipe
+  let tx = 0, ty = 0, touchActive = false;
+  boardWrap.addEventListener('touchstart', (e) => {
+    if (e.touches.length !== 1) return;
+    tx = e.touches[0].clientX;
+    ty = e.touches[0].clientY;
+    touchActive = true;
+  }, { passive: true });
+
+  boardWrap.addEventListener('touchmove', (e) => {
+    if (touchActive) e.preventDefault();
+  }, { passive: false });
+
+  boardWrap.addEventListener('touchend', (e) => {
+    if (!touchActive) return;
+    touchActive = false;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - tx, dy = t.clientY - ty;
+    const adx = Math.abs(dx), ady = Math.abs(dy);
+    if (Math.max(adx, ady) < 18) {
+      // tap → toggle pause if started
+      if (started && !gameOver) togglePause();
+      return;
+    }
+    if (adx > ady) tryChangeDirection({ x: dx > 0 ? 1 : -1, y: 0 });
+    else tryChangeDirection({ x: 0, y: dy > 0 ? 1 : -1 });
+  });
+
+  // Buttons
+  newGameBtn.addEventListener('click', () => init());
+  pauseBtn.addEventListener('click', () => {
+    if (!started && !gameOver) { startGame(); return; }
+    togglePause();
+  });
+
+  // Focus body so keys work in iframe
+  document.body.tabIndex = -1;
+  boardWrap.addEventListener('click', () => document.body.focus());
+
+  // Init
+  resizeCanvas();
+  init();
+</script>
+</body>
+</html>

@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Minesweeper · 지뢰찾기</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,700;1,400;1,500&family=Noto+Serif+KR:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F5F1EA;
+    --bg-elev: #FBF8F2;
+    --bg-revealed: #F0EAD9;
+    --ink: #1B365D;
+    --ink-mid: #2D456C;
+    --ink-soft: #5A6B82;
+    --line: #D4CCBC;
+    --gold: #B8935A;
+    --gold-deep: #A07C44;
+    --gold-soft: #D9B98A;
+    --danger: #B85A4A;
+    --danger-bg: #E8C4BC;
+    --num-1: #1B365D;
+    --num-2: #4A7C5E;
+    --num-3: #B85A4A;
+    --num-4: #5A3D7C;
+    --num-5: #A07C44;
+    --num-6: #2D7C7C;
+    --num-7: #2D456C;
+    --num-8: #5A6B82;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    font-family: "EB Garamond", "Noto Serif KR", Georgia, serif;
+    background: var(--bg);
+    background-image:
+      radial-gradient(circle at 20% 10%, rgba(184, 147, 90, 0.06), transparent 40%),
+      radial-gradient(circle at 80% 90%, rgba(27, 54, 93, 0.05), transparent 40%);
+    color: var(--ink);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 16px;
+    -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+  .frame { width: 100%; max-width: 400px; }
+
+  .header { text-align: center; margin-bottom: 22px; }
+  .eyebrow {
+    font-size: 0.7rem;
+    letter-spacing: 0.35em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin-bottom: 6px;
+  }
+  .title {
+    font-family: "EB Garamond", serif;
+    font-style: italic;
+    font-weight: 500;
+    font-size: 2.4rem;
+    line-height: 1;
+  }
+  .title::after {
+    content: "";
+    display: block;
+    width: 32px;
+    height: 1px;
+    background: var(--gold);
+    margin: 14px auto 0;
+  }
+
+  /* Difficulty modes */
+  .modes {
+    display: flex;
+    margin-bottom: 14px;
+    border: 1px solid var(--line);
+    background: var(--bg-elev);
+  }
+  .mode-btn {
+    flex: 1;
+    padding: 11px 6px;
+    background: transparent;
+    border: none;
+    color: var(--ink-soft);
+    font-family: inherit;
+    font-size: 0.82rem;
+    letter-spacing: 0.08em;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .mode-btn + .mode-btn { border-left: 1px solid var(--line); }
+  .mode-btn.active { background: var(--ink); color: var(--bg-elev); }
+
+  /* Stats bar */
+  .stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 1px;
+    background: var(--line);
+    border: 1px solid var(--line);
+    margin-bottom: 14px;
+  }
+  .stat-cell {
+    background: var(--bg-elev);
+    padding: 10px 6px;
+    text-align: center;
+  }
+  .stat-label {
+    font-size: 0.62rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin-bottom: 2px;
+  }
+  .stat-value {
+    font-family: "EB Garamond", serif;
+    font-size: 1.3rem;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+  }
+  .stat-cell.gold .stat-value { color: var(--gold); font-style: italic; }
+  .stat-cell .stat-value .symbol {
+    font-style: normal;
+    color: var(--gold);
+    margin-right: 3px;
+  }
+
+  /* Status */
+  .status {
+    text-align: center;
+    font-size: 0.88rem;
+    font-style: italic;
+    color: var(--ink-soft);
+    min-height: 22px;
+    margin-bottom: 12px;
+    letter-spacing: 0.02em;
+  }
+  .status.go { color: var(--gold); font-style: normal; letter-spacing: 0.08em; }
+  .status.win { color: var(--gold); font-style: normal; letter-spacing: 0.1em; font-weight: 500; }
+  .status.lose { color: var(--danger); font-style: normal; }
+
+  /* Board */
+  .board-wrap {
+    position: relative;
+    border: 1px solid var(--line);
+    background: var(--bg-elev);
+    padding: 6px;
+    margin-bottom: 14px;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  .board {
+    display: grid;
+    gap: 2px;
+    aspect-ratio: 1;
+    width: 100%;
+  }
+  .cell {
+    background: var(--bg);
+    border: 1px solid var(--line);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: "EB Garamond", serif;
+    font-style: italic;
+    font-weight: 700;
+    cursor: pointer;
+    aspect-ratio: 1;
+    position: relative;
+    transition: background 0.15s ease, transform 0.1s ease;
+    font-size: clamp(0.8rem, 3.2vw, 1.1rem);
+    line-height: 1;
+    overflow: hidden;
+  }
+  .cell::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.4) 0%, transparent 50%);
+    pointer-events: none;
+    opacity: 0.5;
+  }
+  .cell:active:not(.revealed):not(.flagged):not(.disabled) {
+    transform: scale(0.94);
+  }
+  .cell.revealed {
+    background: var(--bg-revealed);
+    border-color: rgba(212, 204, 188, 0.5);
+    cursor: default;
+  }
+  .cell.revealed::before { display: none; }
+  .cell.revealed.empty { background: transparent; border-color: transparent; }
+  .cell.flagged { background: var(--bg-elev); }
+  .cell.flagged .flag {
+    color: var(--gold);
+    font-style: normal;
+    font-weight: 400;
+    font-size: 1em;
+    animation: flagPlant 0.25s ease-out;
+  }
+  @keyframes flagPlant {
+    0% { transform: scale(0) rotate(-30deg); }
+    60% { transform: scale(1.15) rotate(5deg); }
+    100% { transform: scale(1) rotate(0); }
+  }
+  .cell.mine { background: var(--ink); border-color: var(--ink); }
+  .cell.mine .mine-icon { color: var(--gold); font-style: normal; font-weight: 400; }
+  .cell.triggered { background: var(--danger); border-color: var(--danger); animation: shake 0.4s ease; }
+  .cell.triggered .mine-icon { color: var(--bg-elev); }
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-2px); }
+    75% { transform: translateX(2px); }
+  }
+  .cell.wrong-flag { background: var(--danger-bg); }
+  .cell.wrong-flag .flag { color: var(--danger); position: relative; }
+  .cell.wrong-flag .flag::after {
+    content: "✕";
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--danger);
+    font-size: 1.3em;
+  }
+  .cell.n-1 { color: var(--num-1); }
+  .cell.n-2 { color: var(--num-2); }
+  .cell.n-3 { color: var(--num-3); }
+  .cell.n-4 { color: var(--num-4); }
+  .cell.n-5 { color: var(--num-5); }
+  .cell.n-6 { color: var(--num-6); }
+  .cell.n-7 { color: var(--num-7); }
+  .cell.n-8 { color: var(--num-8); }
+  .cell.hint-pulse {
+    animation: hintPulse 0.5s ease;
+  }
+  @keyframes hintPulse {
+    0%, 100% { background: var(--bg); }
+    50% { background: var(--gold-soft); }
+  }
+
+  /* Flag mode toggle (mobile primary) */
+  .flag-toggle {
+    margin-bottom: 12px;
+    display: flex;
+    border: 1px solid var(--line);
+    background: var(--bg-elev);
+  }
+  .flag-toggle button {
+    flex: 1;
+    padding: 11px 8px;
+    background: transparent;
+    border: none;
+    color: var(--ink-soft);
+    font-family: inherit;
+    font-size: 0.82rem;
+    letter-spacing: 0.08em;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+  .flag-toggle button + button { border-left: 1px solid var(--line); }
+  .flag-toggle button.active { background: var(--ink); color: var(--bg-elev); }
+  .flag-toggle button .icon {
+    font-style: normal;
+    color: var(--gold);
+  }
+  .flag-toggle button.active .icon { color: var(--gold-soft); }
+
+  .controls {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .btn {
+    padding: 12px;
+    background: transparent;
+    border: 1px solid var(--ink);
+    color: var(--ink);
+    font-family: inherit;
+    font-size: 0.85rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .btn:hover, .btn:active {
+    background: var(--ink);
+    color: var(--bg-elev);
+  }
+
+  .hint {
+    text-align: center;
+    font-size: 0.72rem;
+    color: var(--ink-soft);
+    letter-spacing: 0.05em;
+    line-height: 1.7;
+  }
+
+  /* Overlay */
+  .overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(245, 241, 234, 0.92);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    padding: 20px;
+    animation: fadeIn 0.4s ease;
+  }
+  .overlay.show { display: flex; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+  .overlay-card {
+    background: var(--bg-elev);
+    border: 1px solid var(--gold);
+    padding: 28px 22px;
+    text-align: center;
+    max-width: 290px;
+    width: 100%;
+    position: relative;
+  }
+  .overlay-card::before, .overlay-card::after {
+    content: "";
+    position: absolute;
+    width: 18px; height: 18px;
+    border: 1px solid var(--gold);
+  }
+  .overlay-card::before { top: -1px; left: -1px; border-right: none; border-bottom: none; }
+  .overlay-card::after { bottom: -1px; right: -1px; border-left: none; border-top: none; }
+  .overlay-eyebrow {
+    font-size: 0.65rem;
+    letter-spacing: 0.35em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin-bottom: 8px;
+  }
+  .overlay-title {
+    font-family: "EB Garamond", serif;
+    font-style: italic;
+    font-size: 1.7rem;
+    color: var(--gold);
+    margin-bottom: 14px;
+    line-height: 1.2;
+  }
+  .overlay.lose .overlay-title { color: var(--danger); font-style: normal; }
+  .overlay-stat {
+    font-size: 0.88rem;
+    color: var(--ink-soft);
+    margin-bottom: 18px;
+    line-height: 1.5;
+  }
+  .overlay-stat strong {
+    font-family: "EB Garamond", serif;
+    font-weight: 500;
+    color: var(--ink);
+    font-size: 1.1rem;
+  }
+  .overlay-btn {
+    width: 100%;
+    padding: 11px;
+    border: 1px solid var(--ink);
+    background: var(--ink);
+    color: var(--bg-elev);
+    font-family: inherit;
+    font-size: 0.82rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background 0.2s ease;
+  }
+  .overlay-btn:hover { background: var(--gold); border-color: var(--gold); }
+
+  .footer {
+    text-align: center;
+    margin-top: 18px;
+    font-size: 0.7rem;
+    letter-spacing: 0.15em;
+    color: var(--ink-soft);
+    text-transform: uppercase;
+  }
+</style>
+</head>
+<body>
+  <div class="frame">
+    <header class="header">
+      <div class="eyebrow">Game · No. 06</div>
+      <h1 class="title">Minesweeper</h1>
+    </header>
+
+    <div class="modes" role="tablist">
+      <button class="mode-btn active" data-diff="easy" role="tab">9 × 9 · 쉬움</button>
+      <button class="mode-btn" data-diff="medium" role="tab">12 × 12 · 보통</button>
+      <button class="mode-btn" data-diff="hard" role="tab">14 × 14 · 어려움</button>
+    </div>
+
+    <div class="stats">
+      <div class="stat-cell">
+        <div class="stat-label">Mines</div>
+        <div class="stat-value"><span class="symbol">⚑</span><span id="mines">10</span></div>
+      </div>
+      <div class="stat-cell">
+        <div class="stat-label">Time</div>
+        <div class="stat-value" id="time">0:00</div>
+      </div>
+      <div class="stat-cell gold">
+        <div class="stat-label">Best</div>
+        <div class="stat-value" id="best">—</div>
+      </div>
+    </div>
+
+    <div class="status" id="status">한 칸을 눌러 시작하세요</div>
+
+    <div class="flag-toggle">
+      <button class="active" id="modeReveal">파헤치기</button>
+      <button id="modeFlag"><span class="icon">⚑</span>깃발 꽂기</button>
+    </div>
+
+    <div class="board-wrap">
+      <div class="board" id="board"></div>
+    </div>
+
+    <div class="controls">
+      <button class="btn" id="newGame">새 게임</button>
+    </div>
+
+    <div class="hint">
+      탭 · 파헤치기 / 깃발 꽂기 모드 토글 사용<br>
+      PC에서는 좌클릭 = 파헤치기, 우클릭 = 깃발
+    </div>
+
+    <div class="footer">— Min1 Park · 2026 —</div>
+  </div>
+
+  <div class="overlay" id="overlay">
+    <div class="overlay-card" id="overlayCard">
+      <div class="overlay-eyebrow" id="overlayEyebrow">Complete</div>
+      <div class="overlay-title" id="overlayTitle">클리어</div>
+      <div class="overlay-stat" id="overlayStat">Time · <strong>0:00</strong></div>
+      <button class="overlay-btn" id="overlayBtn">다시 도전</button>
+    </div>
+  </div>
+
+<script>
+  const DIFFS = {
+    easy:   { size: 9,  mines: 10 },
+    medium: { size: 12, mines: 25 },
+    hard:   { size: 14, mines: 40 },
+  };
+
+  const boardEl = document.getElementById('board');
+  const minesEl = document.getElementById('mines');
+  const timeEl = document.getElementById('time');
+  const bestEl = document.getElementById('best');
+  const statusEl = document.getElementById('status');
+  const modeBtns = document.querySelectorAll('.mode-btn');
+  const modeRevealBtn = document.getElementById('modeReveal');
+  const modeFlagBtn = document.getElementById('modeFlag');
+  const newGameBtn = document.getElementById('newGame');
+  const overlay = document.getElementById('overlay');
+  const overlayCard = document.getElementById('overlayCard');
+  const overlayEyebrow = document.getElementById('overlayEyebrow');
+  const overlayTitle = document.getElementById('overlayTitle');
+  const overlayStat = document.getElementById('overlayStat');
+  const overlayBtn = document.getElementById('overlayBtn');
+
+  let difficulty = 'easy';
+  let size = 9, mineCount = 10;
+  let grid = []; // 2D array of { isMine, revealed, flagged, adj, triggered }
+  let state = 'ready'; // ready | playing | won | lost
+  let timer = null;
+  let seconds = 0;
+  let flagsPlaced = 0;
+  let revealedCount = 0;
+  let firstClickDone = false;
+  let flagMode = false; // for mobile
+
+  function loadBest() {
+    try { return parseInt(localStorage.getItem(`gmine-best-${difficulty}`) || '0') || 0; }
+    catch (e) { return 0; }
+  }
+  function saveBest(v) {
+    try { localStorage.setItem(`gmine-best-${difficulty}`, String(v)); } catch (e) {}
+  }
+
+  function formatTime(s) {
+    const m = Math.floor(s / 60);
+    const sec = s % 60;
+    return `${m}:${sec.toString().padStart(2, '0')}`;
+  }
+
+  function startTimer() {
+    if (timer) return;
+    timer = setInterval(() => {
+      seconds++;
+      timeEl.textContent = formatTime(seconds);
+    }, 1000);
+  }
+  function stopTimer() {
+    if (timer) clearInterval(timer);
+    timer = null;
+  }
+
+  function init() {
+    const conf = DIFFS[difficulty];
+    size = conf.size;
+    mineCount = conf.mines;
+    state = 'ready';
+    firstClickDone = false;
+    flagsPlaced = 0;
+    revealedCount = 0;
+    seconds = 0;
+    stopTimer();
+    timeEl.textContent = '0:00';
+    minesEl.textContent = mineCount;
+    const b = loadBest();
+    bestEl.textContent = b ? formatTime(b) : '—';
+    statusEl.textContent = '한 칸을 눌러 시작하세요';
+    statusEl.className = 'status';
+    overlay.classList.remove('show');
+
+    grid = Array.from({ length: size }, () =>
+      Array.from({ length: size }, () => ({
+        isMine: false, revealed: false, flagged: false, adj: 0, triggered: false,
+      }))
+    );
+
+    buildBoard();
+  }
+
+  function buildBoard() {
+    boardEl.innerHTML = '';
+    boardEl.style.gridTemplateColumns = `repeat(${size}, 1fr)`;
+    boardEl.style.gridTemplateRows = `repeat(${size}, 1fr)`;
+
+    for (let r = 0; r < size; r++) {
+      for (let c = 0; c < size; c++) {
+        const cell = document.createElement('div');
+        cell.className = 'cell';
+        cell.dataset.r = r;
+        cell.dataset.c = c;
+        attachCellEvents(cell, r, c);
+        boardEl.appendChild(cell);
+      }
+    }
+  }
+
+  function getCellEl(r, c) {
+    return boardEl.children[r * size + c];
+  }
+
+  function placeMines(safeR, safeC) {
+    // Don't place a mine on the first-clicked cell or its neighbors
+    const safeSet = new Set();
+    for (let dr = -1; dr <= 1; dr++) {
+      for (let dc = -1; dc <= 1; dc++) {
+        const nr = safeR + dr, nc = safeC + dc;
+        if (nr >= 0 && nr < size && nc >= 0 && nc < size) {
+          safeSet.add(nr * size + nc);
+        }
+      }
+    }
+    // If too many mines for safe-zone exclusion, just exclude the clicked cell
+    const totalCells = size * size;
+    const maxMinesWithBuffer = totalCells - safeSet.size;
+    const effectiveSafe = mineCount > maxMinesWithBuffer ? new Set([safeR * size + safeC]) : safeSet;
+
+    const candidates = [];
+    for (let i = 0; i < totalCells; i++) {
+      if (!effectiveSafe.has(i)) candidates.push(i);
+    }
+    // Shuffle and take first mineCount
+    for (let i = candidates.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [candidates[i], candidates[j]] = [candidates[j], candidates[i]];
+    }
+    for (let i = 0; i < mineCount; i++) {
+      const idx = candidates[i];
+      const r = Math.floor(idx / size);
+      const c = idx % size;
+      grid[r][c].isMine = true;
+    }
+    // Calculate adjacency
+    for (let r = 0; r < size; r++) {
+      for (let c = 0; c < size; c++) {
+        if (grid[r][c].isMine) continue;
+        let count = 0;
+        for (let dr = -1; dr <= 1; dr++) {
+          for (let dc = -1; dc <= 1; dc++) {
+            if (dr === 0 && dc === 0) continue;
+            const nr = r + dr, nc = c + dc;
+            if (nr >= 0 && nr < size && nc >= 0 && nc < size && grid[nr][nc].isMine) count++;
+          }
+        }
+        grid[r][c].adj = count;
+      }
+    }
+  }
+
+  function reveal(r, c) {
+    if (state !== 'ready' && state !== 'playing') return;
+    if (r < 0 || r >= size || c < 0 || c >= size) return;
+    const cell = grid[r][c];
+    if (cell.revealed || cell.flagged) return;
+
+    if (!firstClickDone) {
+      placeMines(r, c);
+      firstClickDone = true;
+      state = 'playing';
+      startTimer();
+      statusEl.textContent = '진행 중';
+      statusEl.className = 'status go';
+    }
+
+    cell.revealed = true;
+    revealedCount++;
+    const el = getCellEl(r, c);
+    el.classList.add('revealed');
+
+    if (cell.isMine) {
+      cell.triggered = true;
+      el.classList.add('mine', 'triggered');
+      el.innerHTML = '<span class="mine-icon">✱</span>';
+      return lose();
+    }
+
+    if (cell.adj > 0) {
+      el.classList.add(`n-${cell.adj}`);
+      el.textContent = cell.adj;
+    } else {
+      el.classList.add('empty');
+      el.textContent = '';
+      // Flood fill
+      for (let dr = -1; dr <= 1; dr++) {
+        for (let dc = -1; dc <= 1; dc++) {
+          if (dr === 0 && dc === 0) continue;
+          reveal(r + dr, c + dc);
+        }
+      }
+    }
+
+    checkWin();
+  }
+
+  function toggleFlag(r, c) {
+    if (state !== 'ready' && state !== 'playing') return;
+    const cell = grid[r][c];
+    if (cell.revealed) return;
+    const el = getCellEl(r, c);
+    if (cell.flagged) {
+      cell.flagged = false;
+      flagsPlaced--;
+      el.classList.remove('flagged');
+      el.innerHTML = '';
+    } else {
+      if (flagsPlaced >= mineCount) {
+        // Cap flags at mine count
+      }
+      cell.flagged = true;
+      flagsPlaced++;
+      el.classList.add('flagged');
+      el.innerHTML = '<span class="flag">⚑</span>';
+    }
+    minesEl.textContent = Math.max(0, mineCount - flagsPlaced);
+    checkWin();
+  }
+
+  function checkWin() {
+    if (state !== 'playing') return;
+    const totalSafe = size * size - mineCount;
+    if (revealedCount >= totalSafe) win();
+  }
+
+  function win() {
+    state = 'won';
+    stopTimer();
+    statusEl.textContent = '클리어';
+    statusEl.className = 'status win';
+    // Auto-flag remaining mines
+    for (let r = 0; r < size; r++) {
+      for (let c = 0; c < size; c++) {
+        const cell = grid[r][c];
+        if (cell.isMine && !cell.flagged) {
+          cell.flagged = true;
+          flagsPlaced++;
+          const el = getCellEl(r, c);
+          el.classList.add('flagged');
+          el.innerHTML = '<span class="flag">⚑</span>';
+        }
+      }
+    }
+    minesEl.textContent = 0;
+
+    // Best time
+    const prev = loadBest();
+    let newRecord = false;
+    if (prev === 0 || seconds < prev) {
+      saveBest(seconds);
+      bestEl.textContent = formatTime(seconds);
+      newRecord = true;
+    }
+
+    setTimeout(() => {
+      overlayCard.parentElement.classList.remove('lose');
+      overlayCard.parentElement.classList.add('show');
+      overlayEyebrow.textContent = 'Complete';
+      overlayTitle.textContent = '클리어';
+      overlayTitle.style.color = '';
+      overlayStat.innerHTML = `Time · <strong>${formatTime(seconds)}</strong>` +
+        (newRecord ? '<br><span style="color:var(--gold);font-style:italic;">최고 기록 갱신</span>' : '');
+      overlayBtn.textContent = '다시 도전';
+    }, 500);
+  }
+
+  function lose() {
+    state = 'lost';
+    stopTimer();
+    statusEl.textContent = '게임 오버';
+    statusEl.className = 'status lose';
+
+    // Reveal all mines + show wrong flags
+    for (let r = 0; r < size; r++) {
+      for (let c = 0; c < size; c++) {
+        const cell = grid[r][c];
+        const el = getCellEl(r, c);
+        if (cell.isMine && !cell.revealed && !cell.flagged) {
+          el.classList.add('revealed', 'mine');
+          el.innerHTML = '<span class="mine-icon">✱</span>';
+        }
+        if (!cell.isMine && cell.flagged) {
+          el.classList.add('wrong-flag');
+        }
+      }
+    }
+
+    setTimeout(() => {
+      overlay.classList.add('lose', 'show');
+      overlayEyebrow.textContent = 'Game Over';
+      overlayTitle.textContent = '게임 오버';
+      overlayStat.innerHTML = `Time · <strong>${formatTime(seconds)}</strong>`;
+      overlayBtn.textContent = '다시 시작';
+    }, 700);
+  }
+
+  // === Cell event handling ===
+  function attachCellEvents(el, r, c) {
+    // Right-click for flag (desktop)
+    el.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      toggleFlag(r, c);
+    });
+
+    // Long press detection for mobile
+    let touchTimer = null;
+    let touchMoved = false;
+    let touchStartX = 0, touchStartY = 0;
+    let longPressed = false;
+
+    el.addEventListener('touchstart', (e) => {
+      if (e.touches.length !== 1) return;
+      touchMoved = false;
+      longPressed = false;
+      touchStartX = e.touches[0].clientX;
+      touchStartY = e.touches[0].clientY;
+      touchTimer = setTimeout(() => {
+        if (!touchMoved) {
+          longPressed = true;
+          toggleFlag(r, c);
+          // Tiny haptic if available
+          if (navigator.vibrate) navigator.vibrate(20);
+        }
+      }, 380);
+    }, { passive: true });
+
+    el.addEventListener('touchmove', (e) => {
+      if (e.touches.length !== 1) return;
+      const dx = e.touches[0].clientX - touchStartX;
+      const dy = e.touches[0].clientY - touchStartY;
+      if (Math.abs(dx) > 8 || Math.abs(dy) > 8) {
+        touchMoved = true;
+        clearTimeout(touchTimer);
+      }
+    }, { passive: true });
+
+    el.addEventListener('touchend', (e) => {
+      clearTimeout(touchTimer);
+      if (longPressed || touchMoved) return;
+      e.preventDefault();
+      if (flagMode) toggleFlag(r, c);
+      else reveal(r, c);
+    });
+
+    // Click for desktop (without triggering on touch)
+    el.addEventListener('click', (e) => {
+      // Skip if this is a synthetic click from touch
+      if (e.detail === 0) return; // detail 0 = synthetic from non-mouse
+      if (flagMode) toggleFlag(r, c);
+      else reveal(r, c);
+    });
+  }
+
+  // === Mode buttons ===
+  modeBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (btn.classList.contains('active')) return;
+      modeBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      difficulty = btn.dataset.diff;
+      init();
+    });
+  });
+
+  modeRevealBtn.addEventListener('click', () => {
+    flagMode = false;
+    modeRevealBtn.classList.add('active');
+    modeFlagBtn.classList.remove('active');
+  });
+  modeFlagBtn.addEventListener('click', () => {
+    flagMode = true;
+    modeFlagBtn.classList.add('active');
+    modeRevealBtn.classList.remove('active');
+  });
+
+  newGameBtn.addEventListener('click', () => init());
+  overlayBtn.addEventListener('click', () => init());
+
+  // Prevent context menu on board (so right-click for flag works clean)
+  boardEl.addEventListener('contextmenu', (e) => e.preventDefault());
+
+  init();
+</script>
+</body>
+</html>

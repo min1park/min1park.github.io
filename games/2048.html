@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>2048 · 숫자 합치기</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=Noto+Serif+KR:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F5F1EA;
+    --bg-elev: #FBF8F2;
+    --ink: #1B365D;
+    --ink-soft: #5A6B82;
+    --line: #D4CCBC;
+    --gold: #B8935A;
+    --gold-deep: #A07C44;
+    --empty: rgba(184, 147, 90, 0.08);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+
+  body {
+    font-family: "EB Garamond", "Noto Serif KR", Georgia, serif;
+    background: var(--bg);
+    background-image:
+      radial-gradient(circle at 20% 10%, rgba(184, 147, 90, 0.06), transparent 40%),
+      radial-gradient(circle at 80% 90%, rgba(27, 54, 93, 0.05), transparent 40%);
+    color: var(--ink);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 16px;
+    -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+
+  .frame { width: 100%; max-width: 400px; }
+
+  .header { text-align: center; margin-bottom: 22px; }
+  .eyebrow {
+    font-size: 0.7rem;
+    letter-spacing: 0.35em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin-bottom: 6px;
+  }
+  .title {
+    font-family: "EB Garamond", serif;
+    font-style: italic;
+    font-weight: 500;
+    font-size: 2.4rem;
+    line-height: 1;
+  }
+  .title::after {
+    content: "";
+    display: block;
+    width: 32px;
+    height: 1px;
+    background: var(--gold);
+    margin: 14px auto 0;
+  }
+
+  /* Score bar */
+  .scores {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1px;
+    background: var(--line);
+    border: 1px solid var(--line);
+    margin-bottom: 14px;
+  }
+  .score-cell {
+    background: var(--bg-elev);
+    padding: 10px 12px;
+    text-align: center;
+  }
+  .score-label {
+    font-size: 0.62rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin-bottom: 2px;
+  }
+  .score-value {
+    font-family: "EB Garamond", serif;
+    font-size: 1.4rem;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+  }
+  .score-cell.best .score-value { color: var(--gold); font-style: italic; }
+
+  /* Status */
+  .status {
+    text-align: center;
+    font-size: 0.88rem;
+    font-style: italic;
+    color: var(--ink-soft);
+    min-height: 22px;
+    margin-bottom: 14px;
+    letter-spacing: 0.02em;
+  }
+  .status .delta {
+    display: inline-block;
+    color: var(--gold);
+    margin-left: 6px;
+    font-weight: 500;
+    font-style: normal;
+    animation: floatUp 0.8s ease-out;
+  }
+  @keyframes floatUp {
+    0% { opacity: 0; transform: translateY(8px); }
+    30% { opacity: 1; }
+    100% { opacity: 0; transform: translateY(-8px); }
+  }
+
+  /* Board */
+  .board {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-rows: repeat(4, 1fr);
+    gap: 6px;
+    padding: 8px;
+    background: var(--bg-elev);
+    aspect-ratio: 1;
+    border: 1px solid var(--line);
+    margin-bottom: 16px;
+    position: relative;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  .cell {
+    background: var(--empty);
+    border: 1px solid rgba(212, 204, 188, 0.5);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .tile {
+    position: absolute;
+    inset: 1px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: "EB Garamond", serif;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    background: var(--bg-elev);
+    color: var(--ink);
+    border: 1px solid var(--line);
+    font-size: clamp(1.1rem, 5.5vw, 1.7rem);
+    animation: tilePop 0.18s ease-out;
+  }
+  @keyframes tilePop {
+    0% { transform: scale(0); opacity: 0; }
+    60% { transform: scale(1.06); opacity: 1; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  .tile.merged {
+    animation: tileMerge 0.22s ease-out;
+  }
+  @keyframes tileMerge {
+    0% { transform: scale(1); }
+    35% { transform: scale(1.18); }
+    100% { transform: scale(1); }
+  }
+  .tile.not-new { animation: none; }
+
+  /* Tile color tiers */
+  .tile-2    { background: #FBF8F2; color: #1B365D; }
+  .tile-4    { background: #F4ECD9; color: #1B365D; }
+  .tile-8    { background: #EBDEBA; color: #1B365D; border-color: var(--gold); }
+  .tile-16   { background: #DFC993; color: #1B365D; border-color: var(--gold); }
+  .tile-32   { background: #D2B270; color: #FBF8F2; border-color: var(--gold-deep); }
+  .tile-64   { background: var(--gold); color: #FBF8F2; border-color: var(--gold-deep); }
+  .tile-128  { background: var(--gold-deep); color: #FBF8F2; border-color: var(--gold-deep); font-size: clamp(0.95rem, 4.8vw, 1.5rem); }
+  .tile-256  { background: #856231; color: #FBF8F2; border-color: #6E4F26; font-size: clamp(0.95rem, 4.8vw, 1.5rem); }
+  .tile-512  { background: #4A5F7F; color: #FBF8F2; border-color: #2D456C; font-size: clamp(0.95rem, 4.8vw, 1.5rem); }
+  .tile-1024 { background: #2D456C; color: var(--gold); border-color: #1B365D; font-size: clamp(0.85rem, 4.2vw, 1.3rem); }
+  .tile-2048 { background: var(--ink); color: var(--gold); border-color: var(--gold); font-size: clamp(0.85rem, 4.2vw, 1.3rem); box-shadow: 0 0 0 1px var(--gold); }
+  .tile-super { background: #0F1F37; color: var(--gold); border-color: var(--gold); font-size: clamp(0.75rem, 3.8vw, 1.1rem); }
+
+  /* Controls */
+  .controls {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .btn {
+    padding: 12px;
+    background: transparent;
+    border: 1px solid var(--ink);
+    color: var(--ink);
+    font-family: inherit;
+    font-size: 0.85rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .btn:hover, .btn:active {
+    background: var(--ink);
+    color: var(--bg-elev);
+  }
+  .btn.subtle {
+    border-color: var(--line);
+    color: var(--ink-soft);
+  }
+  .btn.subtle:hover {
+    background: var(--ink-soft);
+    color: var(--bg-elev);
+  }
+
+  .hint {
+    text-align: center;
+    font-size: 0.72rem;
+    color: var(--ink-soft);
+    letter-spacing: 0.1em;
+    line-height: 1.5;
+  }
+  .hint .kbd {
+    display: inline-block;
+    padding: 1px 5px;
+    border: 1px solid var(--line);
+    background: var(--bg-elev);
+    font-family: "EB Garamond", serif;
+    font-size: 0.75rem;
+    margin: 0 1px;
+  }
+
+  .footer {
+    text-align: center;
+    margin-top: 18px;
+    font-size: 0.7rem;
+    letter-spacing: 0.15em;
+    color: var(--ink-soft);
+    text-transform: uppercase;
+  }
+
+  /* Overlay */
+  .overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(245, 241, 234, 0.92);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    padding: 20px;
+    animation: fadeIn 0.4s ease;
+  }
+  .overlay.show { display: flex; }
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  .overlay-card {
+    background: var(--bg-elev);
+    border: 1px solid var(--gold);
+    padding: 26px 22px;
+    text-align: center;
+    max-width: 280px;
+    width: 100%;
+    position: relative;
+  }
+  .overlay-card::before, .overlay-card::after {
+    content: "";
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    border: 1px solid var(--gold);
+  }
+  .overlay-card::before { top: -1px; left: -1px; border-right: none; border-bottom: none; }
+  .overlay-card::after { bottom: -1px; right: -1px; border-left: none; border-top: none; }
+  .overlay-eyebrow {
+    font-size: 0.65rem;
+    letter-spacing: 0.35em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin-bottom: 8px;
+  }
+  .overlay-title {
+    font-family: "EB Garamond", serif;
+    font-style: italic;
+    font-size: 1.7rem;
+    color: var(--gold);
+    margin-bottom: 14px;
+  }
+  .overlay-card.gameover .overlay-title {
+    color: var(--ink);
+    font-style: normal;
+  }
+  .overlay-stat {
+    font-size: 0.85rem;
+    color: var(--ink-soft);
+    margin-bottom: 16px;
+  }
+  .overlay-stat strong {
+    font-family: "EB Garamond", serif;
+    font-weight: 500;
+    color: var(--ink);
+    font-size: 1.1rem;
+  }
+  .overlay-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .overlay-btn {
+    padding: 10px;
+    border: 1px solid var(--ink);
+    background: var(--ink);
+    color: var(--bg-elev);
+    font-family: inherit;
+    font-size: 0.82rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background 0.2s ease;
+  }
+  .overlay-btn:hover { background: var(--gold); border-color: var(--gold); }
+  .overlay-btn.ghost {
+    background: transparent;
+    color: var(--ink);
+  }
+  .overlay-btn.ghost:hover {
+    background: var(--ink);
+    color: var(--bg-elev);
+  }
+</style>
+</head>
+<body>
+  <div class="frame">
+    <header class="header">
+      <div class="eyebrow">Game · No. 03</div>
+      <h1 class="title">2048</h1>
+    </header>
+
+    <div class="scores">
+      <div class="score-cell">
+        <div class="score-label">Score</div>
+        <div class="score-value" id="score">0</div>
+      </div>
+      <div class="score-cell best">
+        <div class="score-label">Best</div>
+        <div class="score-value" id="best">0</div>
+      </div>
+    </div>
+
+    <div class="status" id="status">같은 숫자를 합쳐 2048을 만들어 보세요</div>
+
+    <div class="board" id="board">
+      <div class="overlay" id="overlay">
+        <div class="overlay-card" id="overlayCard">
+          <div class="overlay-eyebrow" id="overlayEyebrow">Complete</div>
+          <div class="overlay-title" id="overlayTitle">2048 달성</div>
+          <div class="overlay-stat">Score · <strong id="overlayScore">0</strong></div>
+          <div class="overlay-actions">
+            <button class="overlay-btn" id="overlayPrimary">계속하기</button>
+            <button class="overlay-btn ghost" id="overlaySecondary">새 게임</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button class="btn" id="newGame">새 게임</button>
+      <button class="btn subtle" id="undoBtn">한 수 무르기</button>
+    </div>
+
+    <div class="hint">
+      방향키 <span class="kbd">↑</span><span class="kbd">↓</span><span class="kbd">←</span><span class="kbd">→</span> 또는 화면 스와이프
+    </div>
+
+    <div class="footer">— Min1 Park · 2026 —</div>
+  </div>
+
+<script>
+  const SIZE = 4;
+  const boardEl = document.getElementById('board');
+  const scoreEl = document.getElementById('score');
+  const bestEl = document.getElementById('best');
+  const statusEl = document.getElementById('status');
+  const newGameBtn = document.getElementById('newGame');
+  const undoBtn = document.getElementById('undoBtn');
+  const overlay = document.getElementById('overlay');
+  const overlayCard = document.getElementById('overlayCard');
+  const overlayEyebrow = document.getElementById('overlayEyebrow');
+  const overlayTitle = document.getElementById('overlayTitle');
+  const overlayScore = document.getElementById('overlayScore');
+  const overlayPrimary = document.getElementById('overlayPrimary');
+  const overlaySecondary = document.getElementById('overlaySecondary');
+
+  let board = [];
+  let score = 0;
+  let best = 0;
+  let prevBoard = null;
+  let prevScore = 0;
+  let won = false;
+  let winShown = false;
+  let gameOver = false;
+  let newTiles = []; // [{r, c}]
+  let mergedTiles = []; // [{r, c}]
+
+  // localStorage with safety fallback (some environments block it)
+  function loadBest() {
+    try { return parseInt(localStorage.getItem('g2048-best') || '0') || 0; }
+    catch (e) { return 0; }
+  }
+  function saveBest(v) {
+    try { localStorage.setItem('g2048-best', String(v)); } catch (e) {}
+  }
+
+  function init() {
+    board = Array.from({ length: SIZE }, () => Array(SIZE).fill(0));
+    score = 0;
+    prevBoard = null;
+    prevScore = 0;
+    won = false;
+    winShown = false;
+    gameOver = false;
+    newTiles = [];
+    mergedTiles = [];
+    best = loadBest();
+    bestEl.textContent = best;
+    statusEl.textContent = '같은 숫자를 합쳐 2048을 만들어 보세요';
+    overlay.classList.remove('show');
+    addRandomTile();
+    addRandomTile();
+    render();
+    updateScore();
+    undoBtn.disabled = true;
+    undoBtn.style.opacity = '0.4';
+  }
+
+  function addRandomTile() {
+    const empty = [];
+    for (let r = 0; r < SIZE; r++)
+      for (let c = 0; c < SIZE; c++)
+        if (board[r][c] === 0) empty.push([r, c]);
+    if (empty.length === 0) return;
+    const [r, c] = empty[Math.floor(Math.random() * empty.length)];
+    board[r][c] = Math.random() < 0.9 ? 2 : 4;
+    newTiles.push({ r, c });
+  }
+
+  function cloneBoard(b) {
+    return b.map(row => row.slice());
+  }
+
+  function slideAndMerge(row) {
+    const arr = row.filter(v => v !== 0);
+    const merges = [];
+    let i = 0;
+    const result = [];
+    while (i < arr.length) {
+      if (i + 1 < arr.length && arr[i] === arr[i + 1]) {
+        const v = arr[i] * 2;
+        result.push(v);
+        merges.push(result.length - 1);
+        score += v;
+        if (v === 2048 && !won) won = true;
+        i += 2;
+      } else {
+        result.push(arr[i]);
+        i++;
+      }
+    }
+    while (result.length < SIZE) result.push(0);
+    return { arr: result, merges };
+  }
+
+  function move(dir) {
+    if (gameOver) return;
+    if (overlay.classList.contains('show')) return;
+
+    const snapshot = cloneBoard(board);
+    const snapshotScore = score;
+
+    newTiles = [];
+    mergedTiles = [];
+
+    if (dir === 'left' || dir === 'right') {
+      for (let r = 0; r < SIZE; r++) {
+        let row = board[r].slice();
+        if (dir === 'right') row.reverse();
+        const { arr, merges } = slideAndMerge(row);
+        let final = arr;
+        if (dir === 'right') {
+          final = arr.slice().reverse();
+          merges.forEach(i => mergedTiles.push({ r, c: SIZE - 1 - i }));
+        } else {
+          merges.forEach(i => mergedTiles.push({ r, c: i }));
+        }
+        board[r] = final;
+      }
+    } else {
+      for (let c = 0; c < SIZE; c++) {
+        let col = [];
+        for (let r = 0; r < SIZE; r++) col.push(board[r][c]);
+        if (dir === 'down') col.reverse();
+        const { arr, merges } = slideAndMerge(col);
+        let final = arr;
+        if (dir === 'down') {
+          final = arr.slice().reverse();
+          merges.forEach(i => mergedTiles.push({ r: SIZE - 1 - i, c }));
+        } else {
+          merges.forEach(i => mergedTiles.push({ r: i, c }));
+        }
+        for (let r = 0; r < SIZE; r++) board[r][c] = final[r];
+      }
+    }
+
+    let moved = false;
+    for (let r = 0; r < SIZE && !moved; r++)
+      for (let c = 0; c < SIZE && !moved; c++)
+        if (board[r][c] !== snapshot[r][c]) moved = true;
+
+    if (!moved) {
+      // revert score in case partial merges happened (shouldn't, but safe)
+      score = snapshotScore;
+      return;
+    }
+
+    // save undo state
+    prevBoard = snapshot;
+    prevScore = snapshotScore;
+    undoBtn.disabled = false;
+    undoBtn.style.opacity = '1';
+
+    const delta = score - snapshotScore;
+    addRandomTile();
+    render();
+    updateScore(delta);
+
+    if (score > best) {
+      best = score;
+      bestEl.textContent = best;
+      saveBest(best);
+    }
+
+    if (won && !winShown) {
+      winShown = true;
+      showOverlay('win');
+      return;
+    }
+
+    if (isGameOver()) {
+      gameOver = true;
+      setTimeout(() => showOverlay('over'), 300);
+    }
+  }
+
+  function isGameOver() {
+    for (let r = 0; r < SIZE; r++) {
+      for (let c = 0; c < SIZE; c++) {
+        if (board[r][c] === 0) return false;
+        if (r + 1 < SIZE && board[r + 1][c] === board[r][c]) return false;
+        if (c + 1 < SIZE && board[r][c + 1] === board[r][c]) return false;
+      }
+    }
+    return true;
+  }
+
+  function tileClass(v) {
+    if (v >= 4096) return 'tile-super';
+    return `tile-${v}`;
+  }
+
+  function render() {
+    // Remove all children except overlay
+    Array.from(boardEl.children).forEach(c => {
+      if (c.id !== 'overlay') c.remove();
+    });
+
+    for (let r = 0; r < SIZE; r++) {
+      for (let c = 0; c < SIZE; c++) {
+        const cell = document.createElement('div');
+        cell.className = 'cell';
+        const v = board[r][c];
+        if (v !== 0) {
+          const tile = document.createElement('div');
+          const isNew = newTiles.some(t => t.r === r && t.c === c);
+          const isMerged = mergedTiles.some(t => t.r === r && t.c === c);
+          tile.className = `tile ${tileClass(v)}`;
+          if (isMerged) tile.classList.add('merged');
+          else if (!isNew) tile.classList.add('not-new');
+          tile.textContent = v;
+          cell.appendChild(tile);
+        }
+        boardEl.insertBefore(cell, overlay);
+      }
+    }
+  }
+
+  function updateScore(delta) {
+    scoreEl.textContent = score;
+    if (delta && delta > 0) {
+      statusEl.innerHTML = `진행 중 <span class="delta">+${delta}</span>`;
+    }
+  }
+
+  function undo() {
+    if (!prevBoard) return;
+    board = prevBoard;
+    score = prevScore;
+    prevBoard = null;
+    won = won && score >= 2048; // keep win flag honest
+    gameOver = false;
+    newTiles = [];
+    mergedTiles = [];
+    undoBtn.disabled = true;
+    undoBtn.style.opacity = '0.4';
+    overlay.classList.remove('show');
+    statusEl.textContent = '한 수 무름';
+    render();
+    updateScore();
+  }
+
+  function showOverlay(type) {
+    overlayCard.classList.remove('gameover');
+    if (type === 'win') {
+      overlayEyebrow.textContent = 'Complete';
+      overlayTitle.textContent = '2048 달성';
+      overlayPrimary.textContent = '계속하기';
+      overlaySecondary.textContent = '새 게임';
+      overlaySecondary.style.display = '';
+    } else {
+      overlayCard.classList.add('gameover');
+      overlayEyebrow.textContent = 'Game Over';
+      overlayTitle.textContent = '더 이상 움직일 수 없습니다';
+      overlayPrimary.textContent = '다시 시작';
+      overlaySecondary.style.display = 'none';
+    }
+    overlayScore.textContent = score;
+    overlay.classList.add('show');
+  }
+
+  overlayPrimary.addEventListener('click', () => {
+    if (overlayTitle.textContent === '2048 달성') {
+      overlay.classList.remove('show');
+      statusEl.textContent = '계속해 보세요';
+    } else {
+      init();
+    }
+  });
+  overlaySecondary.addEventListener('click', () => init());
+
+  newGameBtn.addEventListener('click', () => init());
+  undoBtn.addEventListener('click', undo);
+
+  // Keyboard input
+  window.addEventListener('keydown', (e) => {
+    const map = {
+      'ArrowUp': 'up', 'ArrowDown': 'down', 'ArrowLeft': 'left', 'ArrowRight': 'right',
+      'w': 'up', 's': 'down', 'a': 'left', 'd': 'right',
+      'W': 'up', 'S': 'down', 'A': 'left', 'D': 'right',
+    };
+    if (map[e.key]) {
+      e.preventDefault();
+      move(map[e.key]);
+    }
+  });
+
+  // Touch / swipe input
+  let touchStartX = 0, touchStartY = 0;
+  let touchActive = false;
+  boardEl.addEventListener('touchstart', (e) => {
+    if (e.touches.length !== 1) return;
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+    touchActive = true;
+  }, { passive: true });
+
+  boardEl.addEventListener('touchmove', (e) => {
+    if (touchActive) e.preventDefault();
+  }, { passive: false });
+
+  boardEl.addEventListener('touchend', (e) => {
+    if (!touchActive) return;
+    touchActive = false;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - touchStartX;
+    const dy = t.clientY - touchStartY;
+    const adx = Math.abs(dx), ady = Math.abs(dy);
+    if (Math.max(adx, ady) < 20) return; // too small
+    if (adx > ady) move(dx > 0 ? 'right' : 'left');
+    else move(dy > 0 ? 'down' : 'up');
+  });
+
+  // Also support mouse drag for desktop trackpads
+  let mouseDown = false, mx = 0, my = 0;
+  boardEl.addEventListener('mousedown', (e) => {
+    mouseDown = true;
+    mx = e.clientX; my = e.clientY;
+  });
+  window.addEventListener('mouseup', (e) => {
+    if (!mouseDown) return;
+    mouseDown = false;
+    const dx = e.clientX - mx, dy = e.clientY - my;
+    const adx = Math.abs(dx), ady = Math.abs(dy);
+    if (Math.max(adx, ady) < 30) return;
+    if (adx > ady) move(dx > 0 ? 'right' : 'left');
+    else move(dy > 0 ? 'down' : 'up');
+  });
+
+  // Focus board so iframe can capture keys
+  document.body.tabIndex = -1;
+  document.body.focus();
+  boardEl.addEventListener('click', () => document.body.focus());
+
+  init();
+</script>
+</body>
+</html>

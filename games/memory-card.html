@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Memory · 카드 짝맞추기</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=Noto+Serif+KR:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F5F1EA;
+    --bg-elev: #FBF8F2;
+    --ink: #1B365D;
+    --ink-soft: #5A6B82;
+    --line: #D4CCBC;
+    --gold: #B8935A;
+    --gold-soft: #D9B98A;
+    --card-back: #1B365D;
+    --card-face: #FBF8F2;
+    --matched: #B8935A;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body { height: 100%; }
+
+  body {
+    font-family: "EB Garamond", "Noto Serif KR", Georgia, serif;
+    background: var(--bg);
+    background-image:
+      radial-gradient(circle at 20% 10%, rgba(184, 147, 90, 0.06), transparent 40%),
+      radial-gradient(circle at 80% 90%, rgba(27, 54, 93, 0.05), transparent 40%);
+    color: var(--ink);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 16px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .frame { width: 100%; max-width: 420px; }
+
+  /* Header */
+  .header { text-align: center; margin-bottom: 24px; }
+  .eyebrow {
+    font-size: 0.7rem;
+    letter-spacing: 0.35em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin-bottom: 6px;
+  }
+  .title {
+    font-family: "EB Garamond", serif;
+    font-style: italic;
+    font-weight: 500;
+    font-size: 2.4rem;
+    line-height: 1;
+    color: var(--ink);
+  }
+  .title::after {
+    content: "";
+    display: block;
+    width: 32px;
+    height: 1px;
+    background: var(--gold);
+    margin: 14px auto 0;
+  }
+
+  /* Mode toggle */
+  .modes {
+    display: flex;
+    margin-bottom: 16px;
+    border: 1px solid var(--line);
+    background: var(--bg-elev);
+  }
+  .mode-btn {
+    flex: 1;
+    padding: 11px 8px;
+    background: transparent;
+    border: none;
+    color: var(--ink-soft);
+    font-family: inherit;
+    font-size: 0.82rem;
+    letter-spacing: 0.08em;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .mode-btn + .mode-btn { border-left: 1px solid var(--line); }
+  .mode-btn.active { background: var(--ink); color: var(--bg-elev); }
+
+  /* Stats bar */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: var(--line);
+    border: 1px solid var(--line);
+    margin-bottom: 18px;
+  }
+  .stat-cell {
+    background: var(--bg-elev);
+    padding: 10px 6px;
+    text-align: center;
+  }
+  .stat-label {
+    font-size: 0.62rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin-bottom: 2px;
+  }
+  .stat-value {
+    font-family: "EB Garamond", serif;
+    font-size: 1.3rem;
+    font-weight: 500;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+  }
+  .stat-cell.gold .stat-value { color: var(--gold); font-style: italic; }
+
+  /* Status */
+  .status {
+    text-align: center;
+    font-size: 0.95rem;
+    font-style: italic;
+    color: var(--ink-soft);
+    min-height: 24px;
+    margin-bottom: 16px;
+    letter-spacing: 0.02em;
+    transition: color 0.3s ease;
+  }
+  .status.win {
+    color: var(--gold);
+    font-style: normal;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+  }
+
+  .status.preview {
+    color: var(--gold);
+    letter-spacing: 0.1em;
+  }
+
+  /* Board */
+  .board {
+    display: grid;
+    gap: 8px;
+    margin-bottom: 20px;
+    perspective: 1000px;
+  }
+  .board.cols-4 { grid-template-columns: repeat(4, 1fr); }
+  .board.cols-6 { grid-template-columns: repeat(6, 1fr); gap: 6px; }
+
+  .card {
+    aspect-ratio: 3 / 4;
+    position: relative;
+    cursor: pointer;
+    transform-style: preserve-3d;
+    transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .card.flipped { transform: rotateY(180deg); }
+  .card.matched { cursor: default; }
+  .card.matched .card-face {
+    border-color: var(--matched);
+    background: #FAF3E5;
+  }
+  .card.matched .card-face .symbol {
+    color: var(--matched);
+    animation: glow 0.6s ease-out;
+  }
+  @keyframes glow {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.15); }
+    100% { transform: scale(1); }
+  }
+
+  .card-back, .card-face {
+    position: absolute;
+    inset: 0;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--line);
+    transition: border-color 0.3s ease, background 0.3s ease;
+  }
+
+  .card-back {
+    background: var(--card-back);
+    color: var(--gold);
+    background-image:
+      linear-gradient(135deg, transparent 45%, rgba(184, 147, 90, 0.15) 45%, rgba(184, 147, 90, 0.15) 55%, transparent 55%),
+      linear-gradient(45deg, transparent 45%, rgba(184, 147, 90, 0.15) 45%, rgba(184, 147, 90, 0.15) 55%, transparent 55%);
+    background-size: 14px 14px;
+  }
+  .card-back::after {
+    content: "";
+    position: absolute;
+    inset: 8px;
+    border: 1px solid var(--gold);
+    pointer-events: none;
+  }
+  .card-back .monogram {
+    font-family: "EB Garamond", serif;
+    font-style: italic;
+    font-size: 1.2rem;
+    color: var(--gold);
+    position: relative;
+    z-index: 1;
+  }
+
+  .card-face {
+    background: var(--card-face);
+    transform: rotateY(180deg);
+  }
+  .card-face .symbol {
+    font-size: clamp(1.6rem, 8vw, 2.4rem);
+    color: var(--ink);
+    transition: color 0.3s ease;
+  }
+
+  /* Reset */
+  .reset {
+    width: 100%;
+    padding: 13px;
+    background: transparent;
+    border: 1px solid var(--ink);
+    color: var(--ink);
+    font-family: inherit;
+    font-size: 0.9rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .reset:hover { background: var(--ink); color: var(--bg-elev); }
+
+  .footer {
+    text-align: center;
+    margin-top: 18px;
+    font-size: 0.7rem;
+    letter-spacing: 0.15em;
+    color: var(--ink-soft);
+    text-transform: uppercase;
+  }
+
+  /* Win overlay */
+  .win-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(245, 241, 234, 0.92);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    animation: fadeIn 0.4s ease;
+  }
+  .win-overlay.show { display: flex; }
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  .win-card {
+    background: var(--bg-elev);
+    border: 1px solid var(--gold);
+    padding: 36px 28px;
+    text-align: center;
+    max-width: 320px;
+    width: 90%;
+    position: relative;
+  }
+  .win-card::before, .win-card::after {
+    content: "";
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    border: 1px solid var(--gold);
+  }
+  .win-card::before { top: -1px; left: -1px; border-right: none; border-bottom: none; }
+  .win-card::after { bottom: -1px; right: -1px; border-left: none; border-top: none; }
+  .win-eyebrow {
+    font-size: 0.7rem;
+    letter-spacing: 0.35em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin-bottom: 10px;
+  }
+  .win-title {
+    font-family: "EB Garamond", serif;
+    font-style: italic;
+    font-size: 2rem;
+    color: var(--gold);
+    margin-bottom: 18px;
+  }
+  .win-stats {
+    display: flex;
+    justify-content: center;
+    gap: 28px;
+    margin-bottom: 24px;
+  }
+  .win-stat-label {
+    font-size: 0.65rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin-bottom: 4px;
+  }
+  .win-stat-value {
+    font-family: "EB Garamond", serif;
+    font-size: 1.8rem;
+    font-weight: 500;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+  }
+  .win-btn {
+    width: 100%;
+    padding: 12px;
+    background: var(--ink);
+    color: var(--bg-elev);
+    border: none;
+    font-family: inherit;
+    font-size: 0.9rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background 0.2s ease;
+  }
+  .win-btn:hover { background: var(--gold); }
+</style>
+</head>
+<body>
+  <div class="frame">
+    <header class="header">
+      <div class="eyebrow">Game · No. 02</div>
+      <h1 class="title">Memory</h1>
+    </header>
+
+    <div class="modes" role="tablist">
+      <button class="mode-btn active" data-size="4" role="tab">4 × 4 · 쉬움</button>
+      <button class="mode-btn" data-size="6" role="tab">6 × 6 · 어려움</button>
+    </div>
+
+    <div class="stats">
+      <div class="stat-cell">
+        <div class="stat-label">Moves</div>
+        <div class="stat-value" id="moves">0</div>
+      </div>
+      <div class="stat-cell gold">
+        <div class="stat-label">Matched</div>
+        <div class="stat-value" id="matched">0</div>
+      </div>
+      <div class="stat-cell">
+        <div class="stat-label">Time</div>
+        <div class="stat-value" id="time">0:00</div>
+      </div>
+    </div>
+
+    <div class="status" id="status">카드 두 장을 뒤집어 보세요</div>
+
+    <div class="board cols-4" id="board"></div>
+
+    <button class="reset" id="reset">다시 시작</button>
+
+    <div class="footer">— Min1 Park · 2026 —</div>
+  </div>
+
+  <div class="win-overlay" id="winOverlay">
+    <div class="win-card">
+      <div class="win-eyebrow">Complete</div>
+      <div class="win-title">완성하셨습니다</div>
+      <div class="win-stats">
+        <div>
+          <div class="win-stat-label">Moves</div>
+          <div class="win-stat-value" id="winMoves">0</div>
+        </div>
+        <div>
+          <div class="win-stat-label">Time</div>
+          <div class="win-stat-value" id="winTime">0:00</div>
+        </div>
+      </div>
+      <button class="win-btn" id="winBtn">다시 도전</button>
+    </div>
+  </div>
+
+<script>
+  const boardEl = document.getElementById('board');
+  const movesEl = document.getElementById('moves');
+  const matchedEl = document.getElementById('matched');
+  const timeEl = document.getElementById('time');
+  const statusEl = document.getElementById('status');
+  const resetBtn = document.getElementById('reset');
+  const modeBtns = document.querySelectorAll('.mode-btn');
+  const winOverlay = document.getElementById('winOverlay');
+  const winMovesEl = document.getElementById('winMoves');
+  const winTimeEl = document.getElementById('winTime');
+  const winBtn = document.getElementById('winBtn');
+
+  // Card symbols — using simple geometric/celestial glyphs
+  const allSymbols = ['✦','✧','❋','❀','✿','✾','❖','◈','◆','◉','✤','✪','❉','✱','⚜','✸','❄','☘'];
+
+  let size = 4;
+  let cards = [];
+  let firstPick = null;
+  let secondPick = null;
+  let busy = false;
+  let moves = 0;
+  let matched = 0;
+  let totalPairs = 0;
+  let timer = null;
+  let seconds = 0;
+  let started = false;
+
+  function shuffle(arr) {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  function formatTime(s) {
+    const m = Math.floor(s / 60);
+    const sec = s % 60;
+    return `${m}:${sec.toString().padStart(2, '0')}`;
+  }
+
+  function startTimer() {
+    if (timer) return;
+    timer = setInterval(() => {
+      seconds++;
+      timeEl.textContent = formatTime(seconds);
+    }, 1000);
+  }
+
+  function stopTimer() {
+    if (timer) {
+      clearInterval(timer);
+      timer = null;
+    }
+  }
+
+  function buildBoard() {
+    boardEl.className = `board cols-${size}`;
+    boardEl.innerHTML = '';
+    totalPairs = (size * size) / 2;
+    const symbols = shuffle(allSymbols).slice(0, totalPairs);
+    const deck = shuffle([...symbols, ...symbols]);
+
+    cards = deck.map((sym, i) => ({ id: i, symbol: sym, matched: false, flipped: false }));
+
+    cards.forEach((card, i) => {
+      const el = document.createElement('div');
+      el.className = 'card';
+      el.dataset.index = i;
+      el.innerHTML = `
+        <div class="card-back"><span class="monogram">M</span></div>
+        <div class="card-face"><span class="symbol">${card.symbol}</span></div>
+      `;
+      el.addEventListener('click', () => flip(i));
+      boardEl.appendChild(el);
+    });
+  }
+
+  function showPreview() {
+    busy = true;
+    const previewMs = size === 4 ? 1500 : 2500;
+    statusEl.textContent = '카드 위치를 기억하세요';
+    statusEl.className = 'status preview';
+
+    // Flip all cards face-up
+    cards.forEach((card, i) => {
+      card.flipped = true;
+      boardEl.children[i].classList.add('flipped');
+    });
+
+    setTimeout(() => {
+      // Flip all back
+      cards.forEach((card, i) => {
+        card.flipped = false;
+        boardEl.children[i].classList.remove('flipped');
+      });
+      setTimeout(() => {
+        busy = false;
+        statusEl.textContent = '카드 두 장을 뒤집어 보세요';
+        statusEl.className = 'status';
+      }, 500); // wait for flip-back animation
+    }, previewMs);
+  }
+
+  function flip(i) {
+    if (busy) return;
+    const card = cards[i];
+    if (card.matched || card.flipped) return;
+    if (firstPick !== null && secondPick !== null) return;
+
+    if (!started) {
+      started = true;
+      startTimer();
+    }
+
+    card.flipped = true;
+    const el = boardEl.children[i];
+    el.classList.add('flipped');
+
+    if (firstPick === null) {
+      firstPick = i;
+      return;
+    }
+
+    secondPick = i;
+    moves++;
+    movesEl.textContent = moves;
+    busy = true;
+
+    if (cards[firstPick].symbol === cards[secondPick].symbol) {
+      // Match
+      setTimeout(() => {
+        cards[firstPick].matched = true;
+        cards[secondPick].matched = true;
+        boardEl.children[firstPick].classList.add('matched');
+        boardEl.children[secondPick].classList.add('matched');
+        matched++;
+        matchedEl.textContent = matched;
+        firstPick = null;
+        secondPick = null;
+        busy = false;
+
+        if (matched === totalPairs) {
+          win();
+        } else {
+          statusEl.textContent = '좋습니다, 한 쌍 완성';
+          setTimeout(() => {
+            if (matched < totalPairs) statusEl.textContent = '계속해 보세요';
+          }, 900);
+        }
+      }, 350);
+    } else {
+      // No match
+      setTimeout(() => {
+        cards[firstPick].flipped = false;
+        cards[secondPick].flipped = false;
+        boardEl.children[firstPick].classList.remove('flipped');
+        boardEl.children[secondPick].classList.remove('flipped');
+        firstPick = null;
+        secondPick = null;
+        busy = false;
+      }, 850);
+    }
+  }
+
+  function win() {
+    stopTimer();
+    statusEl.textContent = '모든 짝을 맞추셨습니다';
+    statusEl.className = 'status win';
+    winMovesEl.textContent = moves;
+    winTimeEl.textContent = formatTime(seconds);
+    setTimeout(() => {
+      winOverlay.classList.add('show');
+    }, 600);
+  }
+
+  function reset() {
+    stopTimer();
+    firstPick = null;
+    secondPick = null;
+    busy = false;
+    moves = 0;
+    matched = 0;
+    seconds = 0;
+    started = false;
+    movesEl.textContent = 0;
+    matchedEl.textContent = 0;
+    timeEl.textContent = '0:00';
+    statusEl.textContent = '카드 두 장을 뒤집어 보세요';
+    statusEl.className = 'status';
+    winOverlay.classList.remove('show');
+    buildBoard();
+    showPreview();
+  }
+
+  resetBtn.addEventListener('click', reset);
+  winBtn.addEventListener('click', reset);
+
+  modeBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (btn.classList.contains('active')) return;
+      modeBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      size = parseInt(btn.dataset.size);
+      reset();
+    });
+  });
+
+  buildBoard();
+  showPreview();
+</script>
+</body>
+</html>

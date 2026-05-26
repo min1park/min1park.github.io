@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tic-Tac-Toe · 틱택토</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=Noto+Serif+KR:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F5F1EA;
+    --bg-elev: #FBF8F2;
+    --ink: #1B365D;
+    --ink-soft: #5A6B82;
+    --line: #D4CCBC;
+    --gold: #B8935A;
+    --gold-soft: #D9B98A;
+    --x-color: #1B365D;
+    --o-color: #B8935A;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    height: 100%;
+  }
+
+  body {
+    font-family: "EB Garamond", "Noto Serif KR", Georgia, serif;
+    background: var(--bg);
+    background-image:
+      radial-gradient(circle at 20% 10%, rgba(184, 147, 90, 0.06), transparent 40%),
+      radial-gradient(circle at 80% 90%, rgba(27, 54, 93, 0.05), transparent 40%);
+    color: var(--ink);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 16px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .frame {
+    width: 100%;
+    max-width: 380px;
+  }
+
+  /* Header */
+  .header {
+    text-align: center;
+    margin-bottom: 28px;
+  }
+  .eyebrow {
+    font-size: 0.7rem;
+    letter-spacing: 0.35em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin-bottom: 6px;
+  }
+  .title {
+    font-family: "EB Garamond", serif;
+    font-style: italic;
+    font-weight: 500;
+    font-size: 2.4rem;
+    line-height: 1;
+    color: var(--ink);
+  }
+  .title::after {
+    content: "";
+    display: block;
+    width: 32px;
+    height: 1px;
+    background: var(--gold);
+    margin: 14px auto 0;
+  }
+
+  /* Mode toggle */
+  .modes {
+    display: flex;
+    gap: 0;
+    margin-bottom: 20px;
+    border: 1px solid var(--line);
+    background: var(--bg-elev);
+  }
+  .mode-btn {
+    flex: 1;
+    padding: 11px 8px;
+    background: transparent;
+    border: none;
+    color: var(--ink-soft);
+    font-family: inherit;
+    font-size: 0.85rem;
+    letter-spacing: 0.08em;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+  }
+  .mode-btn + .mode-btn {
+    border-left: 1px solid var(--line);
+  }
+  .mode-btn.active {
+    background: var(--ink);
+    color: var(--bg-elev);
+  }
+
+  /* Status */
+  .status {
+    text-align: center;
+    font-size: 1rem;
+    font-style: italic;
+    color: var(--ink-soft);
+    min-height: 28px;
+    margin-bottom: 18px;
+    letter-spacing: 0.02em;
+    transition: color 0.3s ease;
+  }
+  .status.win { color: var(--gold); font-style: normal; font-weight: 500; }
+  .status.lose { color: var(--ink); font-style: normal; }
+  .status.draw { color: var(--ink-soft); }
+
+  /* Board */
+  .board-wrap {
+    position: relative;
+    aspect-ratio: 1;
+    margin-bottom: 24px;
+  }
+  .board {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    background: var(--bg-elev);
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+  }
+  .cell {
+    background: transparent;
+    border: none;
+    font-family: "EB Garamond", serif;
+    font-size: clamp(3rem, 14vw, 4.5rem);
+    font-weight: 400;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--ink);
+    transition: background 0.2s ease;
+    position: relative;
+  }
+  .cell:hover:not(:disabled):not(.filled) {
+    background: rgba(184, 147, 90, 0.08);
+  }
+  .cell:disabled { cursor: default; }
+  .cell.x { color: var(--x-color); }
+  .cell.o { color: var(--o-color); font-style: italic; }
+  .cell .mark {
+    display: inline-block;
+    animation: pop 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  @keyframes pop {
+    0% { transform: scale(0.3); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  /* Grid lines drawn over board */
+  .grid-lines {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+  .grid-lines line {
+    stroke: var(--line);
+    stroke-width: 1;
+  }
+
+  /* Win line overlay */
+  .win-line {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+  .win-line line {
+    stroke: var(--gold);
+    stroke-width: 2.5;
+    stroke-linecap: round;
+    stroke-dasharray: 300;
+    stroke-dashoffset: 300;
+    opacity: 0;
+  }
+  .win-line.active line {
+    animation: draw 0.6s ease-out forwards;
+  }
+  @keyframes draw {
+    0% { stroke-dashoffset: 300; opacity: 0; }
+    20% { opacity: 1; }
+    100% { stroke-dashoffset: 0; opacity: 1; }
+  }
+
+  /* Reset */
+  .reset {
+    width: 100%;
+    padding: 13px;
+    background: transparent;
+    border: 1px solid var(--ink);
+    color: var(--ink);
+    font-family: inherit;
+    font-size: 0.9rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .reset:hover {
+    background: var(--ink);
+    color: var(--bg-elev);
+  }
+
+  /* Score */
+  .score {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: var(--line);
+    margin-top: 20px;
+    border: 1px solid var(--line);
+  }
+  .score-cell {
+    background: var(--bg-elev);
+    padding: 10px 6px;
+    text-align: center;
+  }
+  .score-label {
+    font-size: 0.65rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin-bottom: 2px;
+  }
+  .score-value {
+    font-family: "EB Garamond", serif;
+    font-size: 1.4rem;
+    font-weight: 500;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+  }
+  .score-cell.o .score-value { color: var(--gold); font-style: italic; }
+
+  /* Footer */
+  .footer {
+    text-align: center;
+    margin-top: 20px;
+    font-size: 0.7rem;
+    letter-spacing: 0.15em;
+    color: var(--ink-soft);
+    text-transform: uppercase;
+  }
+</style>
+</head>
+<body>
+  <div class="frame">
+    <header class="header">
+      <div class="eyebrow">Game · No. 01</div>
+      <h1 class="title">Tic-Tac-Toe</h1>
+    </header>
+
+    <div class="modes" role="tablist">
+      <button class="mode-btn active" data-mode="ai" role="tab">vs 컴퓨터</button>
+      <button class="mode-btn" data-mode="2p" role="tab">2인 플레이</button>
+    </div>
+
+    <div class="status" id="status">당신의 차례입니다</div>
+
+    <div class="board-wrap">
+      <div class="board" id="board" role="grid"></div>
+      <svg class="grid-lines" viewBox="0 0 300 300" preserveAspectRatio="none">
+        <line x1="100" y1="10" x2="100" y2="290" />
+        <line x1="200" y1="10" x2="200" y2="290" />
+        <line x1="10" y1="100" x2="290" y2="100" />
+        <line x1="10" y1="200" x2="290" y2="200" />
+      </svg>
+      <svg class="win-line" id="winLine" viewBox="0 0 300 300" preserveAspectRatio="none">
+        <line id="winLineEl" x1="0" y1="0" x2="0" y2="0" />
+      </svg>
+    </div>
+
+    <button class="reset" id="reset">다시 시작</button>
+
+    <div class="score">
+      <div class="score-cell x">
+        <div class="score-label">X</div>
+        <div class="score-value" id="scoreX">0</div>
+      </div>
+      <div class="score-cell">
+        <div class="score-label">Draw</div>
+        <div class="score-value" id="scoreD">0</div>
+      </div>
+      <div class="score-cell o">
+        <div class="score-label">O</div>
+        <div class="score-value" id="scoreO">0</div>
+      </div>
+    </div>
+
+    <div class="footer">— Min1 Park · 2026 —</div>
+  </div>
+
+<script>
+  const boardEl = document.getElementById('board');
+  const statusEl = document.getElementById('status');
+  const resetBtn = document.getElementById('reset');
+  const modeBtns = document.querySelectorAll('.mode-btn');
+  const scoreX = document.getElementById('scoreX');
+  const scoreO = document.getElementById('scoreO');
+  const scoreD = document.getElementById('scoreD');
+  const winLineSvg = document.getElementById('winLine');
+  const winLineEl = document.getElementById('winLineEl');
+
+  let board = Array(9).fill('');
+  let currentPlayer = 'X';
+  let gameOver = false;
+  let mode = 'ai';
+  let scores = { X: 0, O: 0, D: 0 };
+  let busy = false;
+
+  const wins = [
+    [0,1,2],[3,4,5],[6,7,8],
+    [0,3,6],[1,4,7],[2,5,8],
+    [0,4,8],[2,4,6]
+  ];
+
+  // Coordinates for win line endpoints in 300x300 viewBox
+  const lineCoords = {
+    '0,1,2': [10, 50, 290, 50],
+    '3,4,5': [10, 150, 290, 150],
+    '6,7,8': [10, 250, 290, 250],
+    '0,3,6': [50, 10, 50, 290],
+    '1,4,7': [150, 10, 150, 290],
+    '2,5,8': [250, 10, 250, 290],
+    '0,4,8': [20, 20, 280, 280],
+    '2,4,6': [280, 20, 20, 280],
+  };
+
+  function render() {
+    const cells = boardEl.querySelectorAll('.cell');
+    if (cells.length === 0) {
+      for (let i = 0; i < 9; i++) {
+        const btn = document.createElement('button');
+        btn.className = 'cell';
+        btn.dataset.index = i;
+        btn.addEventListener('click', () => handleMove(i));
+        boardEl.appendChild(btn);
+      }
+    }
+    boardEl.querySelectorAll('.cell').forEach((btn, i) => {
+      const val = board[i];
+      const wasFilled = btn.classList.contains('filled');
+      btn.className = 'cell' + (val ? ' filled ' + val.toLowerCase() : '');
+      btn.disabled = !!val || gameOver || (mode === 'ai' && currentPlayer === 'O') || busy;
+      if (val && !wasFilled) {
+        btn.innerHTML = `<span class="mark">${val}</span>`;
+      } else if (!val) {
+        btn.innerHTML = '';
+      }
+    });
+  }
+
+  function checkWinner(b) {
+    for (const line of wins) {
+      const [a, b1, c] = line;
+      if (b[a] && b[a] === b[b1] && b[a] === b[c]) {
+        return { winner: b[a], line };
+      }
+    }
+    if (b.every(v => v)) return { winner: 'D', line: null };
+    return null;
+  }
+
+  function drawWinLine(line) {
+    const key = line.join(',');
+    const [x1, y1, x2, y2] = lineCoords[key];
+    winLineEl.setAttribute('x1', x1);
+    winLineEl.setAttribute('y1', y1);
+    winLineEl.setAttribute('x2', x2);
+    winLineEl.setAttribute('y2', y2);
+    winLineSvg.classList.remove('active');
+    void winLineSvg.offsetWidth; // reflow to restart animation
+    winLineSvg.classList.add('active');
+  }
+
+  function clearWinLine() {
+    winLineSvg.classList.remove('active');
+  }
+
+  function updateStatus() {
+    if (gameOver) return;
+    statusEl.className = 'status';
+    if (mode === 'ai') {
+      statusEl.textContent = currentPlayer === 'X' ? '당신의 차례입니다' : '컴퓨터가 생각 중…';
+    } else {
+      statusEl.textContent = `${currentPlayer}의 차례`;
+    }
+  }
+
+  function handleMove(i) {
+    if (board[i] || gameOver || busy) return;
+    if (mode === 'ai' && currentPlayer === 'O') return;
+
+    board[i] = currentPlayer;
+    render();
+
+    const result = checkWinner(board);
+    if (result) return endGame(result);
+
+    currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+    updateStatus();
+
+    if (mode === 'ai' && currentPlayer === 'O' && !gameOver) {
+      busy = true;
+      render();
+      setTimeout(() => {
+        const idx = bestMove(board, 'O');
+        board[idx] = 'O';
+        busy = false;
+        const r2 = checkWinner(board);
+        if (r2) {
+          render();
+          return endGame(r2);
+        }
+        currentPlayer = 'X';
+        render();
+        updateStatus();
+      }, 450);
+    }
+  }
+
+  function endGame(result) {
+    gameOver = true;
+    if (result.winner === 'D') {
+      statusEl.textContent = '무승부입니다';
+      statusEl.className = 'status draw';
+      scores.D++;
+    } else {
+      if (mode === 'ai') {
+        if (result.winner === 'X') {
+          statusEl.textContent = '승리하셨습니다';
+          statusEl.className = 'status win';
+        } else {
+          statusEl.textContent = '컴퓨터의 승리';
+          statusEl.className = 'status lose';
+        }
+      } else {
+        statusEl.textContent = `${result.winner}의 승리`;
+        statusEl.className = 'status win';
+      }
+      scores[result.winner]++;
+      drawWinLine(result.line);
+    }
+    scoreX.textContent = scores.X;
+    scoreO.textContent = scores.O;
+    scoreD.textContent = scores.D;
+    render();
+  }
+
+  // Minimax — perfect AI
+  function bestMove(b, player) {
+    let best = { score: -Infinity, index: -1 };
+    for (let i = 0; i < 9; i++) {
+      if (!b[i]) {
+        b[i] = player;
+        const score = minimax(b, false, player, player === 'O' ? 'X' : 'O');
+        b[i] = '';
+        if (score > best.score) best = { score, index: i };
+      }
+    }
+    return best.index;
+  }
+
+  function minimax(b, isMax, aiMark, humanMark) {
+    const result = checkWinner(b);
+    if (result) {
+      if (result.winner === aiMark) return 10;
+      if (result.winner === humanMark) return -10;
+      return 0;
+    }
+    let best = isMax ? -Infinity : Infinity;
+    for (let i = 0; i < 9; i++) {
+      if (!b[i]) {
+        b[i] = isMax ? aiMark : humanMark;
+        const score = minimax(b, !isMax, aiMark, humanMark);
+        b[i] = '';
+        best = isMax ? Math.max(best, score) : Math.min(best, score);
+      }
+    }
+    return best;
+  }
+
+  function reset() {
+    board = Array(9).fill('');
+    currentPlayer = 'X';
+    gameOver = false;
+    busy = false;
+    clearWinLine();
+    render();
+    updateStatus();
+  }
+
+  resetBtn.addEventListener('click', reset);
+
+  modeBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (btn.classList.contains('active')) return;
+      modeBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      mode = btn.dataset.mode;
+      scores = { X: 0, O: 0, D: 0 };
+      scoreX.textContent = 0;
+      scoreO.textContent = 0;
+      scoreD.textContent = 0;
+      reset();
+    });
+  });
+
+  render();
+  updateStatus();
+</script>
+</body>
+</html>

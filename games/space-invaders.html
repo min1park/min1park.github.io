@@ -1,0 +1,1045 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Space Invaders · 스페이스 인베이더</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=Noto+Serif+KR:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F5F1EA;
+    --bg-elev: #FBF8F2;
+    --space: #0A1428;
+    --space-deep: #050B18;
+    --ink: #1B365D;
+    --ink-mid: #2D456C;
+    --ink-soft: #5A6B82;
+    --line: #D4CCBC;
+    --gold: #B8935A;
+    --gold-deep: #A07C44;
+    --gold-soft: #D9B98A;
+    --gold-pale: #EBDEBA;
+    --danger: #B85A4A;
+    --sage: #4A7C5E;
+    --teal: #2D7C7C;
+    --purple: #6B4A8C;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    font-family: "EB Garamond", "Noto Serif KR", Georgia, serif;
+    background: var(--bg);
+    background-image:
+      radial-gradient(circle at 20% 10%, rgba(184, 147, 90, 0.06), transparent 40%),
+      radial-gradient(circle at 80% 90%, rgba(27, 54, 93, 0.05), transparent 40%);
+    color: var(--ink);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px 14px;
+    -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    overflow-x: hidden;
+  }
+  .frame { width: 100%; max-width: 400px; }
+
+  .header { text-align: center; margin-bottom: 18px; }
+  .eyebrow {
+    font-size: 0.7rem;
+    letter-spacing: 0.35em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin-bottom: 6px;
+  }
+  .title {
+    font-family: "EB Garamond", serif;
+    font-style: italic;
+    font-weight: 500;
+    font-size: 2.2rem;
+    line-height: 1;
+  }
+  .title::after {
+    content: "";
+    display: block;
+    width: 32px;
+    height: 1px;
+    background: var(--gold);
+    margin: 14px auto 0;
+  }
+
+  .stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    gap: 1px;
+    background: var(--line);
+    border: 1px solid var(--line);
+    margin-bottom: 12px;
+  }
+  .stat-cell {
+    background: var(--bg-elev);
+    padding: 9px 4px;
+    text-align: center;
+  }
+  .stat-label {
+    font-size: 0.6rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin-bottom: 2px;
+  }
+  .stat-value {
+    font-family: "EB Garamond", serif;
+    font-size: 1.15rem;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+  }
+  .stat-cell.best .stat-value { color: var(--gold); font-style: italic; }
+  .lives {
+    display: inline-flex;
+    gap: 4px;
+    justify-content: center;
+    height: 22px;
+    align-items: center;
+  }
+  .life-icon {
+    width: 14px; height: 8px;
+    background: var(--gold);
+    clip-path: polygon(50% 0, 100% 60%, 100% 100%, 0 100%, 0 60%);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+  }
+  .life-icon.lost {
+    background: var(--line);
+    opacity: 0.4;
+    transform: scale(0.7);
+  }
+
+  .status {
+    text-align: center;
+    font-size: 0.88rem;
+    font-style: italic;
+    color: var(--ink-soft);
+    min-height: 22px;
+    margin-bottom: 10px;
+    letter-spacing: 0.02em;
+  }
+  .status.go { color: var(--gold); font-style: normal; letter-spacing: 0.08em; }
+  .status.danger { color: var(--danger); font-style: normal; }
+  .status.wave {
+    color: var(--gold);
+    font-style: normal;
+    font-weight: 500;
+    letter-spacing: 0.15em;
+    animation: waveFlash 0.6s ease;
+  }
+  @keyframes waveFlash {
+    0%, 100% { transform: scale(1); }
+    30% { transform: scale(1.06); }
+  }
+
+  /* Board */
+  .board-wrap {
+    position: relative;
+    aspect-ratio: 300 / 420;
+    border: 1px solid var(--ink);
+    background: var(--space-deep);
+    margin-bottom: 12px;
+    overflow: hidden;
+    user-select: none;
+    -webkit-user-select: none;
+    cursor: pointer;
+  }
+  canvas { display: block; width: 100%; height: 100%; }
+
+  /* Overlay */
+  .overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(10, 20, 40, 0.85);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 18px;
+    z-index: 5;
+    animation: fadeIn 0.3s ease;
+  }
+  .overlay.show { display: flex; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  .overlay-card {
+    background: var(--bg-elev);
+    border: 1px solid var(--gold);
+    padding: 24px 20px;
+    text-align: center;
+    max-width: 280px;
+    width: 100%;
+    position: relative;
+  }
+  .overlay-card::before, .overlay-card::after {
+    content: ""; position: absolute; width: 16px; height: 16px;
+    border: 1px solid var(--gold);
+  }
+  .overlay-card::before { top: -1px; left: -1px; border-right: none; border-bottom: none; }
+  .overlay-card::after { bottom: -1px; right: -1px; border-left: none; border-top: none; }
+  .overlay-eyebrow {
+    font-size: 0.62rem;
+    letter-spacing: 0.32em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin-bottom: 7px;
+  }
+  .overlay-title {
+    font-family: "EB Garamond", serif;
+    font-style: italic;
+    font-size: 1.6rem;
+    color: var(--gold);
+    margin-bottom: 14px;
+    line-height: 1.2;
+  }
+  .overlay.gameover .overlay-title { color: var(--ink); font-style: normal; }
+  .overlay-stat {
+    font-size: 0.84rem;
+    color: var(--ink-soft);
+    margin-bottom: 14px;
+    line-height: 1.5;
+  }
+  .overlay-stat strong {
+    font-family: "EB Garamond", serif;
+    font-weight: 500;
+    color: var(--ink);
+    font-size: 1.05rem;
+  }
+  .overlay-btn {
+    width: 100%;
+    padding: 11px;
+    border: 1px solid var(--ink);
+    background: var(--ink);
+    color: var(--bg-elev);
+    font-family: inherit;
+    font-size: 0.82rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background 0.2s ease;
+  }
+  .overlay-btn:hover { background: var(--gold); border-color: var(--gold); }
+
+  /* Mobile controls */
+  .ctrls {
+    display: grid;
+    grid-template-columns: 1fr 1.4fr 1fr;
+    gap: 6px;
+    margin-bottom: 10px;
+  }
+  .ctrl {
+    padding: 16px 8px;
+    background: var(--bg-elev);
+    border: 1px solid var(--line);
+    color: var(--ink);
+    font-family: inherit;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: all 0.1s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    user-select: none;
+    -webkit-user-select: none;
+    gap: 6px;
+  }
+  .ctrl:active {
+    background: var(--ink);
+    color: var(--bg-elev);
+    transform: scale(0.96);
+  }
+  .ctrl.fire {
+    border-color: var(--gold);
+    color: var(--gold-deep);
+    font-style: italic;
+    letter-spacing: 0.08em;
+    font-size: 0.9rem;
+  }
+  .ctrl.fire:active {
+    background: var(--gold);
+    color: var(--bg-elev);
+    border-color: var(--gold);
+  }
+
+  .controls-meta {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    margin-bottom: 10px;
+  }
+  .btn {
+    padding: 11px;
+    background: transparent;
+    border: 1px solid var(--ink);
+    color: var(--ink);
+    font-family: inherit;
+    font-size: 0.82rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .btn:hover, .btn:active {
+    background: var(--ink);
+    color: var(--bg-elev);
+  }
+  .btn.subtle {
+    border-color: var(--line);
+    color: var(--ink-soft);
+  }
+  .btn.subtle:hover {
+    background: var(--ink-soft);
+    color: var(--bg-elev);
+  }
+
+  .hint {
+    text-align: center;
+    font-size: 0.7rem;
+    color: var(--ink-soft);
+    letter-spacing: 0.06em;
+    line-height: 1.6;
+  }
+  .kbd {
+    display: inline-block;
+    padding: 1px 5px;
+    border: 1px solid var(--line);
+    background: var(--bg-elev);
+    font-family: "EB Garamond", serif;
+    font-size: 0.7rem;
+    margin: 0 1px;
+  }
+
+  .footer {
+    text-align: center;
+    margin-top: 16px;
+    font-size: 0.7rem;
+    letter-spacing: 0.15em;
+    color: var(--ink-soft);
+    text-transform: uppercase;
+  }
+</style>
+</head>
+<body>
+  <div class="frame">
+    <header class="header">
+      <div class="eyebrow">Game · No. 10</div>
+      <h1 class="title">Space Invaders</h1>
+    </header>
+
+    <div class="stats">
+      <div class="stat-cell">
+        <div class="stat-label">Score</div>
+        <div class="stat-value" id="score">0</div>
+      </div>
+      <div class="stat-cell">
+        <div class="stat-label">Wave</div>
+        <div class="stat-value" id="wave">1</div>
+      </div>
+      <div class="stat-cell">
+        <div class="stat-label">Lives</div>
+        <div class="lives" id="lives"></div>
+      </div>
+      <div class="stat-cell best">
+        <div class="stat-label">Best</div>
+        <div class="stat-value" id="best">0</div>
+      </div>
+    </div>
+
+    <div class="status" id="status">시작 버튼을 누르세요</div>
+
+    <div class="board-wrap" id="boardWrap">
+      <canvas id="canvas"></canvas>
+      <div class="overlay show" id="overlay">
+        <div class="overlay-card" id="overlayCard">
+          <div class="overlay-eyebrow" id="ovEyebrow">Ready</div>
+          <div class="overlay-title" id="ovTitle">출격 준비</div>
+          <div class="overlay-stat" id="ovStat">방향키와 스페이스 또는<br>아래 버튼으로 조작합니다</div>
+          <button class="overlay-btn" id="ovBtn">시작</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="ctrls">
+      <button class="ctrl" id="ctrlLeft" aria-label="왼쪽">←</button>
+      <button class="ctrl fire" id="ctrlFire" aria-label="발사">발사 · FIRE</button>
+      <button class="ctrl" id="ctrlRight" aria-label="오른쪽">→</button>
+    </div>
+
+    <div class="controls-meta">
+      <button class="btn" id="newGameBtn">새 게임</button>
+      <button class="btn subtle" id="pauseBtn">일시정지</button>
+    </div>
+
+    <div class="hint">
+      <span class="kbd">←</span><span class="kbd">→</span> 이동 · <span class="kbd">Space</span> 발사 · <span class="kbd">P</span> 일시정지
+    </div>
+
+    <div class="footer">— Min1 Park · 2026 —</div>
+  </div>
+
+<script>
+  // === Setup ===
+  const canvas = document.getElementById('canvas');
+  const ctx = canvas.getContext('2d');
+  const scoreEl = document.getElementById('score');
+  const waveEl = document.getElementById('wave');
+  const livesEl = document.getElementById('lives');
+  const bestEl = document.getElementById('best');
+  const statusEl = document.getElementById('status');
+  const overlay = document.getElementById('overlay');
+  const overlayCard = document.getElementById('overlayCard');
+  const ovEyebrow = document.getElementById('ovEyebrow');
+  const ovTitle = document.getElementById('ovTitle');
+  const ovStat = document.getElementById('ovStat');
+  const ovBtn = document.getElementById('ovBtn');
+  const newGameBtn = document.getElementById('newGameBtn');
+  const pauseBtn = document.getElementById('pauseBtn');
+  const boardWrap = document.getElementById('boardWrap');
+
+  const styles = getComputedStyle(document.documentElement);
+  const COL = {
+    space: styles.getPropertyValue('--space').trim(),
+    spaceDeep: styles.getPropertyValue('--space-deep').trim(),
+    ink: styles.getPropertyValue('--ink').trim(),
+    gold: styles.getPropertyValue('--gold').trim(),
+    goldDeep: styles.getPropertyValue('--gold-deep').trim(),
+    goldSoft: styles.getPropertyValue('--gold-soft').trim(),
+    goldPale: styles.getPropertyValue('--gold-pale').trim(),
+    danger: styles.getPropertyValue('--danger').trim(),
+    sage: styles.getPropertyValue('--sage').trim(),
+    teal: styles.getPropertyValue('--teal').trim(),
+    purple: styles.getPropertyValue('--purple').trim(),
+  };
+
+  const VW = 300, VH = 420;
+
+  function resizeCanvas() {
+    const dpr = window.devicePixelRatio || 1;
+    const rect = boardWrap.getBoundingClientRect();
+    if (rect.width < 1) return;
+    canvas.width = Math.round(rect.width * dpr);
+    canvas.height = Math.round(rect.height * dpr);
+    const scale = rect.width / VW;
+    ctx.setTransform(dpr * scale, 0, 0, dpr * scale, 0, 0);
+  }
+  window.addEventListener('resize', resizeCanvas);
+  window.addEventListener('load', resizeCanvas);
+
+  // === Pixel art patterns ===
+  // 11x8 alien patterns (two frames each)
+  function parsePattern(rows) {
+    return rows.map(r => r.split('').map(ch => ch === '#'));
+  }
+
+  // Top row alien (smallest, highest points) — squid-like
+  const ALIEN_TOP_A = parsePattern([
+    "    ###    ",
+    "   #####   ",
+    "  #######  ",
+    " ## ### ## ",
+    " ######### ",
+    "  # ### #  ",
+    " # #   # # ",
+    "  #     #  ",
+  ]);
+  const ALIEN_TOP_B = parsePattern([
+    "    ###    ",
+    "   #####   ",
+    "  #######  ",
+    " ## ### ## ",
+    " ######### ",
+    "   # # #   ",
+    "  # # # #  ",
+    " # #   # # ",
+  ]);
+
+  // Middle row alien — crab-like
+  const ALIEN_MID_A = parsePattern([
+    "  #     #  ",
+    "   #   #   ",
+    "  #######  ",
+    " ## ### ## ",
+    "###########",
+    "# ####### #",
+    "# #     # #",
+    "   ## ##   ",
+  ]);
+  const ALIEN_MID_B = parsePattern([
+    "  #     #  ",
+    "#  #   #  #",
+    "# #######  #",
+    "### ### ###",
+    "###########",
+    " ######### ",
+    "  #     #  ",
+    " #       # ",
+  ]);
+
+  // Bottom row alien — octopus
+  const ALIEN_BOT_A = parsePattern([
+    "   #####   ",
+    " ######### ",
+    "###########",
+    "### ### ###",
+    "###########",
+    "  ##   ##  ",
+    " ##  #  ## ",
+    "##   #   ##",
+  ]);
+  const ALIEN_BOT_B = parsePattern([
+    "   #####   ",
+    " ######### ",
+    "###########",
+    "### ### ###",
+    "###########",
+    "   ## ##   ",
+    "  ##   ##  ",
+    " ##     ## ",
+  ]);
+
+  // Player ship — 11 wide x 7 tall
+  const SHIP = parsePattern([
+    "     #     ",
+    "    ###    ",
+    "    ###    ",
+    " ######### ",
+    "###########",
+    "###########",
+    "## ##### ##",
+  ]);
+
+  // Explosion pattern
+  const EXPLOSION = parsePattern([
+    " #  #  #  #",
+    "  # # # #  ",
+    "#   ###   #",
+    " # ##### # ",
+    "#   ###   #",
+    "  # # # #  ",
+    " #  #  #  #",
+    "#  #   #  #",
+  ]);
+
+  // === Game state ===
+  const ROWS = 5;
+  const COLS = 7;
+  const ALIEN_W = 22;  // visual size; pattern is 11 cols so px = ALIEN_W/11 = 2
+  const ALIEN_H = 16;  // pattern 8 rows so px = 2
+  const ALIEN_GAP_X = 8;
+  const ALIEN_GAP_Y = 14;
+  const ALIEN_START_Y = 40;
+  const PLAYER_Y = VH - 22;
+  const PLAYER_W = 22;
+  const PLAYER_H = 14;
+  const BULLET_W = 2, BULLET_H = 8;
+  const ENEMY_BULLET_W = 3, ENEMY_BULLET_H = 8;
+  const FLOOR_Y = VH - 6;
+
+  // Alien tier config
+  const ALIEN_TIERS = [
+    { points: 30, frames: [ALIEN_TOP_A, ALIEN_TOP_B], color: COL.gold },         // row 0 (top)
+    { points: 20, frames: [ALIEN_MID_A, ALIEN_MID_B], color: COL.goldSoft },     // row 1
+    { points: 20, frames: [ALIEN_MID_A, ALIEN_MID_B], color: COL.goldSoft },     // row 2
+    { points: 10, frames: [ALIEN_BOT_A, ALIEN_BOT_B], color: COL.purple },       // row 3
+    { points: 10, frames: [ALIEN_BOT_A, ALIEN_BOT_B], color: COL.purple },       // row 4
+  ];
+
+  let aliens = [];
+  let alienDir = 1; // 1 right, -1 left
+  let alienSpeed = 0.6;
+  let alienFrame = 0;
+  let alienFrameTimer = 0;
+  let playerBullets = [];
+  let enemyBullets = [];
+  let explosions = []; // { x, y, frames }
+  let player = { x: VW / 2, y: PLAYER_Y };
+  let stars = [];
+  let lastTs = 0;
+  let lastEnemyShot = 0;
+  let lastPlayerShot = 0;
+  let invulnUntil = 0;
+
+  let score = 0;
+  let lives = 3;
+  let wave = 1;
+  let best = 0;
+  let state = 'ready'; // ready, playing, paused, waveclear, over
+  let rafId = null;
+  let waveClearAt = 0;
+
+  function loadBest() {
+    try { return parseInt(localStorage.getItem('ginvaders-best') || '0') || 0; }
+    catch (e) { return 0; }
+  }
+  function saveBest(v) {
+    try { localStorage.setItem('ginvaders-best', String(v)); } catch (e) {}
+  }
+
+  function renderLives() {
+    livesEl.innerHTML = '';
+    for (let i = 0; i < 3; i++) {
+      const d = document.createElement('div');
+      d.className = 'life-icon' + (i >= lives ? ' lost' : '');
+      livesEl.appendChild(d);
+    }
+  }
+
+  function generateStars() {
+    stars = [];
+    for (let i = 0; i < 35; i++) {
+      stars.push({
+        x: Math.random() * VW,
+        y: Math.random() * VH,
+        r: Math.random() * 0.8 + 0.2,
+        alpha: Math.random() * 0.6 + 0.3,
+      });
+    }
+  }
+
+  // === Build alien wave ===
+  function buildAliens() {
+    aliens = [];
+    const totalW = COLS * ALIEN_W + (COLS - 1) * ALIEN_GAP_X;
+    const startX = (VW - totalW) / 2;
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        aliens.push({
+          x: startX + c * (ALIEN_W + ALIEN_GAP_X),
+          y: ALIEN_START_Y + r * (ALIEN_H + ALIEN_GAP_Y),
+          row: r,
+          col: c,
+          alive: true,
+          tier: ALIEN_TIERS[r],
+        });
+      }
+    }
+    alienDir = 1;
+    alienSpeed = 0.5 + (wave - 1) * 0.18;
+    alienFrame = 0;
+    alienFrameTimer = 0;
+    playerBullets = [];
+    enemyBullets = [];
+  }
+
+  function init() {
+    score = 0;
+    lives = 3;
+    wave = 1;
+    state = 'ready';
+    best = loadBest();
+    bestEl.textContent = best;
+    scoreEl.textContent = 0;
+    waveEl.textContent = 1;
+    player.x = VW / 2;
+    invulnUntil = 0;
+    explosions = [];
+    generateStars();
+    buildAliens();
+    renderLives();
+    statusEl.textContent = '시작 버튼을 누르세요';
+    statusEl.className = 'status';
+    pauseBtn.textContent = '일시정지';
+    showStartOverlay();
+    if (rafId) cancelAnimationFrame(rafId);
+    lastTs = performance.now();
+    rafId = requestAnimationFrame(loop);
+  }
+
+  function startGame() {
+    state = 'playing';
+    overlay.classList.remove('show');
+    statusEl.textContent = `Wave ${wave} · 출격`;
+    statusEl.className = 'status go';
+    lastTs = performance.now();
+  }
+
+  function pause() {
+    if (state !== 'playing') return;
+    state = 'paused';
+    pauseBtn.textContent = '재개';
+    statusEl.textContent = '일시정지';
+    statusEl.className = 'status';
+    showPauseOverlay();
+  }
+  function resume() {
+    if (state !== 'paused') return;
+    state = 'playing';
+    pauseBtn.textContent = '일시정지';
+    statusEl.textContent = `Wave ${wave} · 진행 중`;
+    statusEl.className = 'status go';
+    overlay.classList.remove('show');
+    lastTs = performance.now();
+  }
+  function togglePause() {
+    if (state === 'playing') pause();
+    else if (state === 'paused') resume();
+  }
+
+  // === Input state ===
+  const keys = { left: false, right: false };
+  function tryShoot() {
+    if (state !== 'playing') return;
+    const now = performance.now();
+    if (now - lastPlayerShot < 280) return;
+    if (playerBullets.length >= 2) return;
+    playerBullets.push({ x: player.x, y: player.y - PLAYER_H / 2 });
+    lastPlayerShot = now;
+  }
+
+  // === Game loop ===
+  function loop(ts) {
+    const dt = Math.min(50, ts - lastTs);
+    lastTs = ts;
+    if (state === 'playing') {
+      update(dt, ts);
+    } else if (state === 'waveclear') {
+      if (ts > waveClearAt) {
+        wave++;
+        waveEl.textContent = wave;
+        buildAliens();
+        state = 'playing';
+        statusEl.textContent = `Wave ${wave} · 진행 중`;
+        statusEl.className = 'status go';
+      }
+    }
+    draw(ts);
+    rafId = requestAnimationFrame(loop);
+  }
+
+  function update(dt, ts) {
+    // Player movement
+    if (keys.left) player.x = Math.max(PLAYER_W / 2, player.x - 3.2 * dt / 16);
+    if (keys.right) player.x = Math.min(VW - PLAYER_W / 2, player.x + 3.2 * dt / 16);
+
+    // Alien animation frame toggle
+    alienFrameTimer += dt;
+    const frameInterval = Math.max(200, 700 - wave * 60);
+    if (alienFrameTimer >= frameInterval) {
+      alienFrame = 1 - alienFrame;
+      alienFrameTimer = 0;
+    }
+
+    // Alien movement
+    const alive = aliens.filter(a => a.alive);
+    if (alive.length > 0) {
+      // Speed scales as aliens are killed
+      const total = ROWS * COLS;
+      const ratio = 1 - alive.length / total;
+      const curSpeed = (alienSpeed + ratio * 1.4) * (dt / 16);
+
+      // Check edge
+      let hitEdge = false;
+      for (const a of alive) {
+        const newX = a.x + alienDir * curSpeed;
+        if (newX < 4 || newX + ALIEN_W > VW - 4) hitEdge = true;
+      }
+      if (hitEdge) {
+        alienDir *= -1;
+        for (const a of alive) a.y += 10;
+        // Check if reached player line
+        for (const a of alive) {
+          if (a.y + ALIEN_H >= player.y - PLAYER_H / 2) return endGame();
+        }
+      } else {
+        for (const a of alive) a.x += alienDir * curSpeed;
+      }
+    }
+
+    // Enemy shooting
+    const enemyShootInterval = Math.max(500, 1800 - wave * 200);
+    if (ts - lastEnemyShot > enemyShootInterval) {
+      // Find lowest aliens per column
+      const shooters = [];
+      for (let c = 0; c < COLS; c++) {
+        let lowest = null;
+        for (let r = ROWS - 1; r >= 0; r--) {
+          const idx = r * COLS + c;
+          if (aliens[idx] && aliens[idx].alive) {
+            if (!lowest || aliens[idx].y > lowest.y) lowest = aliens[idx];
+            break;
+          }
+        }
+        if (lowest) shooters.push(lowest);
+      }
+      if (shooters.length > 0) {
+        const shooter = shooters[Math.floor(Math.random() * shooters.length)];
+        enemyBullets.push({
+          x: shooter.x + ALIEN_W / 2,
+          y: shooter.y + ALIEN_H,
+        });
+        lastEnemyShot = ts;
+      }
+    }
+
+    // Update player bullets
+    playerBullets = playerBullets.filter(b => {
+      b.y -= 4.5 * dt / 16;
+      if (b.y < -BULLET_H) return false;
+      // Check alien hits
+      for (const a of aliens) {
+        if (!a.alive) continue;
+        if (b.x >= a.x && b.x <= a.x + ALIEN_W &&
+            b.y >= a.y && b.y <= a.y + ALIEN_H) {
+          a.alive = false;
+          score += a.tier.points;
+          scoreEl.textContent = score;
+          if (score > best) {
+            best = score;
+            bestEl.textContent = best;
+            saveBest(best);
+          }
+          explosions.push({ x: a.x + ALIEN_W / 2, y: a.y + ALIEN_H / 2, life: 12 });
+          checkWaveClear();
+          return false;
+        }
+      }
+      return true;
+    });
+
+    // Update enemy bullets
+    enemyBullets = enemyBullets.filter(b => {
+      b.y += 2.5 * dt / 16;
+      if (b.y > VH) return false;
+      // Hit player?
+      if (ts > invulnUntil &&
+          b.x >= player.x - PLAYER_W / 2 && b.x <= player.x + PLAYER_W / 2 &&
+          b.y >= player.y - PLAYER_H / 2 && b.y <= player.y + PLAYER_H / 2) {
+        playerHit(ts);
+        return false;
+      }
+      return true;
+    });
+
+    // Update explosions
+    explosions = explosions.filter(e => {
+      e.life--;
+      return e.life > 0;
+    });
+  }
+
+  function playerHit(ts) {
+    lives--;
+    renderLives();
+    invulnUntil = ts + 1500;
+    explosions.push({ x: player.x, y: player.y, life: 16 });
+    if (navigator.vibrate) navigator.vibrate(40);
+    if (lives <= 0) {
+      setTimeout(() => endGame(), 400);
+    } else {
+      statusEl.textContent = `남은 목숨 ${lives}`;
+      statusEl.className = 'status danger';
+      setTimeout(() => {
+        if (state === 'playing') {
+          statusEl.textContent = `Wave ${wave} · 진행 중`;
+          statusEl.className = 'status go';
+        }
+      }, 900);
+    }
+  }
+
+  function checkWaveClear() {
+    if (aliens.every(a => !a.alive)) {
+      state = 'waveclear';
+      waveClearAt = performance.now() + 1400;
+      statusEl.textContent = `Wave ${wave} 완료`;
+      statusEl.className = 'status wave';
+    }
+  }
+
+  function endGame() {
+    state = 'over';
+    if (score > best) {
+      best = score;
+      bestEl.textContent = best;
+      saveBest(best);
+    }
+    statusEl.textContent = '게임 오버';
+    statusEl.className = 'status danger';
+    setTimeout(() => showGameOverOverlay(), 400);
+  }
+
+  // === Drawing ===
+  function drawPattern(pattern, x, y, color, pixelSize = 2) {
+    ctx.fillStyle = color;
+    for (let py = 0; py < pattern.length; py++) {
+      for (let px = 0; px < pattern[py].length; px++) {
+        if (pattern[py][px]) {
+          ctx.fillRect(x + px * pixelSize, y + py * pixelSize, pixelSize, pixelSize);
+        }
+      }
+    }
+  }
+
+  function draw(ts) {
+    // Background
+    ctx.fillStyle = COL.spaceDeep;
+    ctx.fillRect(0, 0, VW, VH);
+
+    // Stars
+    for (const s of stars) {
+      ctx.fillStyle = `rgba(217, 185, 138, ${s.alpha})`;
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Floor line
+    ctx.fillStyle = COL.goldDeep;
+    ctx.fillRect(0, FLOOR_Y, VW, 1);
+    ctx.globalAlpha = 0.3;
+    ctx.fillRect(0, FLOOR_Y - 2, VW, 1);
+    ctx.globalAlpha = 1;
+
+    // Aliens
+    for (const a of aliens) {
+      if (!a.alive) continue;
+      const frame = a.tier.frames[alienFrame];
+      drawPattern(frame, a.x, a.y, a.tier.color, 2);
+    }
+
+    // Player (blink during invuln)
+    const showPlayer = ts > invulnUntil || Math.floor(ts / 100) % 2 === 0;
+    if (lives > 0 && showPlayer) {
+      drawPattern(SHIP, player.x - PLAYER_W / 2, player.y - PLAYER_H / 2, COL.gold, 2);
+    }
+
+    // Player bullets
+    ctx.fillStyle = COL.goldPale;
+    for (const b of playerBullets) {
+      ctx.fillRect(b.x - BULLET_W / 2, b.y - BULLET_H / 2, BULLET_W, BULLET_H);
+    }
+
+    // Enemy bullets (jagged)
+    ctx.fillStyle = COL.danger;
+    for (const b of enemyBullets) {
+      // small zigzag
+      ctx.fillRect(b.x - ENEMY_BULLET_W / 2, b.y - ENEMY_BULLET_H / 2, ENEMY_BULLET_W, ENEMY_BULLET_H);
+      ctx.fillRect(b.x - ENEMY_BULLET_W / 2 - 1, b.y - 1, 1, 2);
+      ctx.fillRect(b.x + ENEMY_BULLET_W / 2, b.y + 1, 1, 2);
+    }
+
+    // Explosions
+    for (const e of explosions) {
+      const alpha = e.life / 16;
+      ctx.globalAlpha = Math.min(1, alpha);
+      drawPattern(EXPLOSION, e.x - 11, e.y - 8, COL.gold, 2);
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  // === Overlays ===
+  function showStartOverlay() {
+    overlay.className = 'overlay show';
+    ovEyebrow.textContent = 'Ready';
+    ovTitle.textContent = '출격 준비';
+    ovStat.innerHTML = '방향키와 스페이스 또는<br>아래 버튼으로 조작합니다';
+    ovBtn.textContent = '시작';
+    ovBtn.onclick = () => startGame();
+  }
+  function showPauseOverlay() {
+    overlay.className = 'overlay show';
+    ovEyebrow.textContent = 'Paused';
+    ovTitle.textContent = '일시정지';
+    ovStat.innerHTML = `Score · <strong>${score}</strong> · Wave <strong>${wave}</strong>`;
+    ovBtn.textContent = '재개';
+    ovBtn.onclick = () => resume();
+  }
+  function showGameOverOverlay() {
+    overlay.className = 'overlay gameover show';
+    ovEyebrow.textContent = 'Game Over';
+    ovTitle.textContent = '게임 오버';
+    const isRecord = score > 0 && score === best;
+    ovStat.innerHTML = `Score · <strong>${score}</strong> · Wave <strong>${wave}</strong>` +
+      (isRecord ? '<br><span style="color:var(--gold);font-style:italic;">최고 기록 갱신</span>' : '');
+    ovBtn.textContent = '다시 시작';
+    ovBtn.onclick = () => { init(); startGame(); };
+  }
+
+  // === Input ===
+  window.addEventListener('keydown', (e) => {
+    if (state === 'ready') {
+      if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); startGame(); }
+      return;
+    }
+    if (state === 'over') {
+      if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); init(); startGame(); }
+      return;
+    }
+    if (state === 'paused') {
+      if (e.key === 'p' || e.key === 'P' || e.key === ' ') { e.preventDefault(); resume(); }
+      return;
+    }
+    switch (e.key) {
+      case 'ArrowLeft': case 'a': case 'A':
+        e.preventDefault(); keys.left = true; break;
+      case 'ArrowRight': case 'd': case 'D':
+        e.preventDefault(); keys.right = true; break;
+      case ' ':
+        e.preventDefault(); tryShoot(); break;
+      case 'p': case 'P':
+        e.preventDefault(); togglePause(); break;
+    }
+  });
+  window.addEventListener('keyup', (e) => {
+    if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') keys.left = false;
+    if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') keys.right = false;
+  });
+
+  // Mobile buttons — left/right hold, fire tap
+  function bindHold(btn, key) {
+    const press = (e) => { e.preventDefault(); keys[key] = true; };
+    const release = () => { keys[key] = false; };
+    btn.addEventListener('touchstart', press, { passive: false });
+    btn.addEventListener('touchend', release);
+    btn.addEventListener('touchcancel', release);
+    btn.addEventListener('mousedown', press);
+    btn.addEventListener('mouseup', release);
+    btn.addEventListener('mouseleave', release);
+  }
+  bindHold(document.getElementById('ctrlLeft'), 'left');
+  bindHold(document.getElementById('ctrlRight'), 'right');
+
+  // Fire button — repeats while held
+  let fireRepeat = null;
+  const ctrlFire = document.getElementById('ctrlFire');
+  const startFire = (e) => {
+    e.preventDefault();
+    tryShoot();
+    fireRepeat = setInterval(tryShoot, 280);
+  };
+  const stopFire = () => {
+    if (fireRepeat) { clearInterval(fireRepeat); fireRepeat = null; }
+  };
+  ctrlFire.addEventListener('touchstart', startFire, { passive: false });
+  ctrlFire.addEventListener('touchend', stopFire);
+  ctrlFire.addEventListener('touchcancel', stopFire);
+  ctrlFire.addEventListener('mousedown', startFire);
+  ctrlFire.addEventListener('mouseup', stopFire);
+  ctrlFire.addEventListener('mouseleave', stopFire);
+
+  // Buttons
+  newGameBtn.addEventListener('click', () => { init(); startGame(); });
+  pauseBtn.addEventListener('click', () => {
+    if (state === 'ready') startGame();
+    else togglePause();
+  });
+
+  // Board tap to focus
+  boardWrap.addEventListener('click', () => document.body.focus());
+  document.body.tabIndex = -1;
+
+  // Boot
+  init();
+  resizeCanvas();
+  setTimeout(resizeCanvas, 100);
+</script>
+</body>
+</html>

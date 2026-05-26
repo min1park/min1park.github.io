@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>min1park · classic games</title>
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #1a2740;
+    --gold: #c9a96a;
+    --cream: #f5efe0;
+    --ink: #2a2a2a;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'EB Garamond', Georgia, serif;
+    background: var(--cream);
+    color: var(--ink);
+    min-height: 100vh;
+    padding: 48px 24px;
+  }
+  .wrap { max-width: 720px; margin: 0 auto; }
+  header { text-align: center; margin-bottom: 56px; }
+  h1 {
+    font-size: 42px;
+    font-weight: 500;
+    color: var(--navy);
+    letter-spacing: 0.5px;
+    margin-bottom: 12px;
+  }
+  .subtitle {
+    font-style: italic;
+    color: var(--navy);
+    opacity: 0.7;
+    font-size: 18px;
+  }
+  .divider {
+    width: 60px;
+    height: 2px;
+    background: var(--gold);
+    margin: 24px auto;
+  }
+  .games {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+  }
+  .game-card {
+    background: white;
+    border: 1px solid rgba(26, 39, 64, 0.12);
+    border-radius: 4px;
+    padding: 20px 24px;
+    text-decoration: none;
+    color: var(--ink);
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .game-card:hover {
+    border-color: var(--gold);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(26, 39, 64, 0.08);
+  }
+  .num {
+    font-size: 14px;
+    color: var(--gold);
+    font-weight: 600;
+    font-variant: small-caps;
+    letter-spacing: 1px;
+    min-width: 32px;
+  }
+  .title {
+    font-size: 20px;
+    font-weight: 500;
+    color: var(--navy);
+  }
+  .desc {
+    font-size: 13px;
+    color: var(--ink);
+    opacity: 0.6;
+    font-style: italic;
+    margin-top: 2px;
+  }
+  footer {
+    text-align: center;
+    margin-top: 64px;
+    font-size: 13px;
+    color: var(--navy);
+    opacity: 0.5;
+    font-style: italic;
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>Classic Games</h1>
+      <div class="divider"></div>
+      <div class="subtitle">ten timeless games, reimagined in the browser</div>
+    </header>
+
+    <div class="games">
+      <a href="games/tic-tac-toe.html" class="game-card">
+        <div class="num">01</div>
+        <div><div class="title">Tic-Tac-Toe</div><div class="desc">틱택토</div></div>
+      </a>
+      <a href="games/memory-card.html" class="game-card">
+        <div class="num">02</div>
+        <div><div class="title">Memory</div><div class="desc">카드 짝맞추기</div></div>
+      </a>
+      <a href="games/2048.html" class="game-card">
+        <div class="num">03</div>
+        <div><div class="title">2048</div><div class="desc">숫자 합치기</div></div>
+      </a>
+      <a href="games/snake.html" class="game-card">
+        <div class="num">04</div>
+        <div><div class="title">Snake</div><div class="desc">스네이크</div></div>
+      </a>
+      <a href="games/breakout.html" class="game-card">
+        <div class="num">05</div>
+        <div><div class="title">Breakout</div><div class="desc">벽돌깨기</div></div>
+      </a>
+      <a href="games/minesweeper.html" class="game-card">
+        <div class="num">06</div>
+        <div><div class="title">Minesweeper</div><div class="desc">지뢰찾기</div></div>
+      </a>
+      <a href="games/tetris.html" class="game-card">
+        <div class="num">07</div>
+        <div><div class="title">Tetris</div><div class="desc">테트리스</div></div>
+      </a>
+      <a href="games/whack-a-mole.html" class="game-card">
+        <div class="num">08</div>
+        <div><div class="title">Whack-a-Mole</div><div class="desc">두더지잡기</div></div>
+      </a>
+      <a href="games/sudoku.html" class="game-card">
+        <div class="num">09</div>
+        <div><div class="title">Sudoku</div><div class="desc">스도쿠</div></div>
+      </a>
+      <a href="games/space-invaders.html" class="game-card">
+        <div class="num">10</div>
+        <div><div class="title">Space Invaders</div><div class="desc">스페이스 인베이더</div></div>
+      </a>
+    </div>
+
+    <footer>
+      &mdash; min1park &mdash;
+    </footer>
+  </div>
+</body>
+</html>
