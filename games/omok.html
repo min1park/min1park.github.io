@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Omok · 오목</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=Noto+Serif+KR:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F5F1EA;
+    --bg-elev: #FBF8F2;
+    --board-bg: #E4CC95;
+    --board-line: rgba(60, 40, 20, 0.55);
+    --ink: #1B365D;
+    --ink-soft: #5A6B82;
+    --line: #D4CCBC;
+    --gold: #B8935A;
+    --stone-shadow: rgba(0, 0, 0, 0.35);
+    --last-marker: #C0392B;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+
+  body {
+    font-family: "EB Garamond", "Noto Serif KR", Georgia, serif;
+    background: var(--bg);
+    background-image:
+      radial-gradient(circle at 20% 10%, rgba(184, 147, 90, 0.06), transparent 40%),
+      radial-gradient(circle at 80% 90%, rgba(27, 54, 93, 0.05), transparent 40%);
+    color: var(--ink);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px 12px;
+    -webkit-font-smoothing: antialiased;
+    touch-action: manipulation;
+  }
+
+  .frame {
+    width: 100%;
+    max-width: 480px;
+  }
+
+  /* Header */
+  .header { text-align: center; margin-bottom: 20px; }
+  .eyebrow {
+    font-size: 0.7rem;
+    letter-spacing: 0.35em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin-bottom: 6px;
+  }
+  .title {
+    font-family: "EB Garamond", serif;
+    font-style: italic;
+    font-weight: 500;
+    font-size: 2.4rem;
+    line-height: 1;
+    color: var(--ink);
+  }
+  .title::after {
+    content: "";
+    display: block;
+    width: 32px;
+    height: 1px;
+    background: var(--gold);
+    margin: 12px auto 0;
+  }
+
+  /* Mode + difficulty toggle */
+  .modes, .difficulty {
+    display: flex;
+    gap: 0;
+    margin-bottom: 10px;
+    border: 1px solid var(--line);
+    background: var(--bg-elev);
+  }
+  .difficulty.hidden { display: none; }
+  .mode-btn, .diff-btn {
+    flex: 1;
+    padding: 10px 6px;
+    background: transparent;
+    border: none;
+    color: var(--ink-soft);
+    font-family: inherit;
+    font-size: 0.82rem;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .mode-btn + .mode-btn,
+  .diff-btn + .diff-btn { border-left: 1px solid var(--line); }
+  .mode-btn.active { background: var(--ink); color: var(--bg-elev); }
+  .diff-btn.active { background: var(--gold); color: var(--bg-elev); }
+
+  /* Status */
+  .status {
+    text-align: center;
+    font-size: 0.95rem;
+    font-style: italic;
+    color: var(--ink-soft);
+    min-height: 24px;
+    margin: 14px 0;
+    letter-spacing: 0.02em;
+  }
+  .status.win { color: var(--gold); font-style: normal; font-weight: 500; }
+  .status.lose { color: var(--ink); font-style: normal; }
+  .status.draw { color: var(--ink-soft); }
+
+  /* Board */
+  .board-wrap {
+    position: relative;
+    aspect-ratio: 1;
+    background: var(--board-bg);
+    border: 1px solid var(--board-line);
+    box-shadow: 0 6px 18px rgba(60, 40, 20, 0.18);
+    margin-bottom: 18px;
+  }
+  .grid-svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+  }
+  .grid-svg line {
+    stroke: var(--board-line);
+    stroke-width: 0.7;
+  }
+  .grid-svg circle.star { fill: var(--board-line); }
+
+  .board {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    grid-template-columns: repeat(15, 1fr);
+    grid-template-rows: repeat(15, 1fr);
+  }
+  .cell {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    position: relative;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .cell:hover:not(:disabled):not(.filled)::before {
+    content: '';
+    position: absolute;
+    inset: 18%;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.07);
+  }
+
+  /* Stones */
+  .stone {
+    position: absolute;
+    inset: 7%;
+    border-radius: 50%;
+    box-shadow: 1px 2px 3px var(--stone-shadow);
+    pointer-events: none;
+    animation: drop 0.18s ease-out;
+  }
+  @keyframes drop {
+    0% { transform: scale(0.4); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  .stone.black {
+    background: radial-gradient(circle at 35% 30%, #5a5a5a, #1a1a1a 60%);
+  }
+  .stone.white {
+    background: radial-gradient(circle at 35% 30%, #ffffff, #d2d2d2 75%);
+    border: 1px solid #aaa;
+  }
+  .cell.last .stone::after {
+    content: '';
+    position: absolute;
+    inset: 38%;
+    border-radius: 50%;
+    background: var(--last-marker);
+    box-shadow: 0 0 2px rgba(0,0,0,0.4);
+  }
+  .cell.win .stone {
+    box-shadow: 0 0 0 2px var(--gold), 1px 2px 3px var(--stone-shadow);
+  }
+
+  /* Controls */
+  .controls {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .btn {
+    padding: 13px 8px;
+    background: transparent;
+    border: 1px solid var(--ink);
+    color: var(--ink);
+    font-family: inherit;
+    font-size: 0.85rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .btn:hover { background: var(--ink); color: var(--bg-elev); }
+  .btn:disabled { opacity: 0.35; cursor: not-allowed; }
+  .btn:disabled:hover { background: transparent; color: var(--ink); }
+
+  /* Score */
+  .score {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1px;
+    background: var(--line);
+    margin-top: 16px;
+    border: 1px solid var(--line);
+  }
+  .score-cell {
+    background: var(--bg-elev);
+    padding: 10px 6px;
+    text-align: center;
+  }
+  .score-label {
+    font-size: 0.7rem;
+    letter-spacing: 0.18em;
+    color: var(--ink-soft);
+    margin-bottom: 2px;
+  }
+  .score-value {
+    font-family: "EB Garamond", serif;
+    font-size: 1.4rem;
+    font-weight: 500;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Footer */
+  .footer {
+    text-align: center;
+    margin-top: 20px;
+    font-size: 0.7rem;
+    letter-spacing: 0.15em;
+    color: var(--ink-soft);
+    text-transform: uppercase;
+  }
+</style>
+</head>
+<body>
+  <div class="frame">
+    <header class="header">
+      <div class="eyebrow">Game · No. 11</div>
+      <h1 class="title">Omok</h1>
+    </header>
+
+    <div class="modes" role="tablist">
+      <button class="mode-btn active" data-mode="2p">2인 플레이</button>
+      <button class="mode-btn" data-mode="ai">vs 컴퓨터</button>
+    </div>
+
+    <div class="difficulty hidden" id="difficultyBar" role="tablist">
+      <button class="diff-btn" data-diff="easy">쉬움</button>
+      <button class="diff-btn active" data-diff="medium">보통</button>
+      <button class="diff-btn" data-diff="hard">어려움</button>
+    </div>
+
+    <div class="status" id="status">흑돌(●)의 차례</div>
+
+    <div class="board-wrap">
+      <svg class="grid-svg" id="gridSvg" viewBox="0 0 300 300" preserveAspectRatio="none"></svg>
+      <div class="board" id="board" role="grid"></div>
+    </div>
+
+    <div class="controls">
+      <button class="btn" id="undoBtn">한 수 무르기</button>
+      <button class="btn" id="resetBtn">다시 시작</button>
+    </div>
+
+    <div class="score">
+      <div class="score-cell">
+        <div class="score-label">● 흑돌 (Black)</div>
+        <div class="score-value" id="scoreB">0</div>
+      </div>
+      <div class="score-cell">
+        <div class="score-label">○ 백돌 (White)</div>
+        <div class="score-value" id="scoreW">0</div>
+      </div>
+    </div>
+
+    <div class="footer">— Min1 Park · 2026 —</div>
+  </div>
+
+<script>
+const SIZE = 15;
+const WIN = 5;
+
+const boardEl = document.getElementById('board');
+const statusEl = document.getElementById('status');
+const undoBtn = document.getElementById('undoBtn');
+const resetBtn = document.getElementById('resetBtn');
+const modeBtns = document.querySelectorAll('.mode-btn');
+const diffBtns = document.querySelectorAll('.diff-btn');
+const difficultyBar = document.getElementById('difficultyBar');
+const scoreB = document.getElementById('scoreB');
+const scoreW = document.getElementById('scoreW');
+const gridSvg = document.getElementById('gridSvg');
+
+let board = createBoard();
+let currentPlayer = 'B';
+let gameOver = false;
+let mode = '2p';
+let difficulty = 'medium';
+let scores = { B: 0, W: 0 };
+let history = [];
+let busy = false;
+let lastMove = null;
+let winLine = null;
+
+function createBoard() {
+  return Array.from({length: SIZE}, () => Array(SIZE).fill(''));
+}
+
+// ----- Grid drawing (SVG) -----
+function drawGrid() {
+  const margin = 10;
+  const inner = 280;
+  const step = inner / (SIZE - 1);
+  let svg = '';
+  for (let i = 0; i < SIZE; i++) {
+    const pos = margin + i * step;
+    svg += `<line x1="${margin}" y1="${pos}" x2="${margin + inner}" y2="${pos}"/>`;
+    svg += `<line x1="${pos}" y1="${margin}" x2="${pos}" y2="${margin + inner}"/>`;
+  }
+  const stars = [[3,3],[3,11],[7,7],[11,3],[11,11]];
+  for (const [r, c] of stars) {
+    const x = margin + c * step;
+    const y = margin + r * step;
+    svg += `<circle class="star" cx="${x}" cy="${y}" r="2.2"/>`;
+  }
+  gridSvg.innerHTML = svg;
+}
+
+// ----- Render -----
+function renderBoard() {
+  if (boardEl.children.length === 0) {
+    for (let r = 0; r < SIZE; r++) {
+      for (let c = 0; c < SIZE; c++) {
+        const btn = document.createElement('button');
+        btn.className = 'cell';
+        btn.dataset.row = r;
+        btn.dataset.col = c;
+        btn.addEventListener('click', () => handleMove(r, c));
+        boardEl.appendChild(btn);
+      }
+    }
+  }
+  const winSet = winLine ? new Set(winLine.map(([r,c]) => r * SIZE + c)) : null;
+  boardEl.querySelectorAll('.cell').forEach(btn => {
+    const r = +btn.dataset.row;
+    const c = +btn.dataset.col;
+    const val = board[r][c];
+    const isLast = lastMove && lastMove.r === r && lastMove.c === c;
+    const isWin = winSet && winSet.has(r * SIZE + c);
+    let cls = 'cell';
+    if (val) cls += ' filled';
+    if (isLast) cls += ' last';
+    if (isWin) cls += ' win';
+    btn.className = cls;
+    btn.disabled = !!val || gameOver || busy || (mode === 'ai' && currentPlayer === 'W');
+    btn.innerHTML = val
+      ? `<span class="stone ${val === 'B' ? 'black' : 'white'}"></span>`
+      : '';
+  });
+  undoBtn.disabled = busy || history.length === 0;
+}
+
+function updateStatus(override) {
+  if (override) {
+    statusEl.textContent = override;
+    return;
+  }
+  statusEl.className = 'status';
+  if (gameOver) return;
+  if (mode === 'ai') {
+    statusEl.textContent = currentPlayer === 'B'
+      ? '당신의 차례 (흑돌 ●)'
+      : '컴퓨터가 생각 중…';
+  } else {
+    statusEl.textContent = currentPlayer === 'B' ? '흑돌(●)의 차례' : '백돌(○)의 차례';
+  }
+}
+
+// ----- Game flow -----
+function handleMove(r, c) {
+  if (gameOver || busy) return;
+  if (board[r][c]) return;
+  if (mode === 'ai' && currentPlayer === 'W') return;
+
+  placeStone(r, c, currentPlayer);
+
+  const wl = checkWin(r, c, currentPlayer);
+  if (wl) return endGame(currentPlayer, wl);
+  if (isBoardFull()) return endGame('D');
+
+  currentPlayer = currentPlayer === 'B' ? 'W' : 'B';
+  updateStatus();
+  renderBoard();
+
+  if (mode === 'ai' && currentPlayer === 'W' && !gameOver) {
+    busy = true;
+    renderBoard();
+    setTimeout(() => {
+      const [aR, aC] = getAIMove();
+      placeStone(aR, aC, 'W');
+      busy = false;
+      const aiWin = checkWin(aR, aC, 'W');
+      if (aiWin) return endGame('W', aiWin);
+      if (isBoardFull()) return endGame('D');
+      currentPlayer = 'B';
+      updateStatus();
+      renderBoard();
+    }, 380);
+  }
+}
+
+function placeStone(r, c, p) {
+  board[r][c] = p;
+  history.push({ r, c, p });
+  lastMove = { r, c };
+}
+
+function isBoardFull() {
+  for (let r = 0; r < SIZE; r++)
+    for (let c = 0; c < SIZE; c++)
+      if (!board[r][c]) return false;
+  return true;
+}
+
+function checkWin(r, c, p) {
+  const dirs = [[0,1],[1,0],[1,1],[1,-1]];
+  for (const [dr, dc] of dirs) {
+    let line = [[r, c]];
+    let rr = r + dr, cc = c + dc;
+    while (rr >= 0 && rr < SIZE && cc >= 0 && cc < SIZE && board[rr][cc] === p) {
+      line.push([rr, cc]);
+      rr += dr; cc += dc;
+    }
+    rr = r - dr; cc = c - dc;
+    while (rr >= 0 && rr < SIZE && cc >= 0 && cc < SIZE && board[rr][cc] === p) {
+      line.unshift([rr, cc]);
+      rr -= dr; cc -= dc;
+    }
+    if (line.length >= WIN) return line;
+  }
+  return null;
+}
+
+function endGame(winner, wl) {
+  gameOver = true;
+  winLine = wl || null;
+  if (winner === 'D') {
+    statusEl.textContent = '무승부';
+    statusEl.className = 'status draw';
+  } else {
+    if (mode === 'ai') {
+      statusEl.textContent = winner === 'B' ? '승리하셨습니다' : '컴퓨터의 승리';
+      statusEl.className = 'status ' + (winner === 'B' ? 'win' : 'lose');
+    } else {
+      statusEl.textContent = `${winner === 'B' ? '흑돌(●)' : '백돌(○)'} 승리`;
+      statusEl.className = 'status win';
+    }
+    scores[winner]++;
+    scoreB.textContent = scores.B;
+    scoreW.textContent = scores.W;
+  }
+  renderBoard();
+}
+
+function undo() {
+  if (busy) return;
+  if (history.length === 0) return;
+  // In AI mode after AI played: undo both AI and player moves
+  // In AI mode while AI thinks (busy): not allowed
+  // In 2P mode: undo one
+  const undoCount = (mode === 'ai' && history.length >= 2 && !gameOver && currentPlayer === 'B') ? 2
+                  : (mode === 'ai' && gameOver) ? 1
+                  : 1;
+  for (let i = 0; i < undoCount; i++) {
+    const last = history.pop();
+    if (last) board[last.r][last.c] = '';
+  }
+  gameOver = false;
+  winLine = null;
+  lastMove = history.length > 0 ? { r: history[history.length-1].r, c: history[history.length-1].c } : null;
+  if (mode === 'ai') {
+    currentPlayer = 'B';
+  } else {
+    currentPlayer = history.length % 2 === 0 ? 'B' : 'W';
+  }
+  updateStatus();
+  renderBoard();
+}
+
+function reset() {
+  board = createBoard();
+  currentPlayer = 'B';
+  gameOver = false;
+  busy = false;
+  history = [];
+  lastMove = null;
+  winLine = null;
+  updateStatus();
+  renderBoard();
+}
+
+// ----- AI -----
+function getAIMove() {
+  // Always: take immediate win or block immediate loss
+  const winMove = findImmediateMove('W');
+  if (winMove) return winMove;
+  const blockMove = findImmediateMove('B');
+  if (blockMove) return blockMove;
+
+  if (difficulty === 'easy') return getEasyMove();
+  if (difficulty === 'hard') return getHardMove();
+  return getMediumMove();
+}
+
+function findImmediateMove(p) {
+  for (let r = 0; r < SIZE; r++) {
+    for (let c = 0; c < SIZE; c++) {
+      if (board[r][c]) continue;
+      board[r][c] = p;
+      const win = checkWin(r, c, p);
+      board[r][c] = '';
+      if (win) return [r, c];
+    }
+  }
+  return null;
+}
+
+function getEasyMove() {
+  // Random move within range of any existing stone (so the game progresses)
+  if (history.length === 0) return [Math.floor(SIZE/2), Math.floor(SIZE/2)];
+  const candidates = [];
+  for (let r = 0; r < SIZE; r++) {
+    for (let c = 0; c < SIZE; c++) {
+      if (!board[r][c] && nearStone(r, c, 2)) candidates.push([r, c]);
+    }
+  }
+  if (candidates.length === 0) return [Math.floor(SIZE/2), Math.floor(SIZE/2)];
+  return candidates[Math.floor(Math.random() * candidates.length)];
+}
+
+function getMediumMove() {
+  if (history.length === 0) return [Math.floor(SIZE/2), Math.floor(SIZE/2)];
+  let bestScore = -1;
+  let bestMoves = [];
+  for (let r = 0; r < SIZE; r++) {
+    for (let c = 0; c < SIZE; c++) {
+      if (board[r][c]) continue;
+      if (!nearStone(r, c, 2)) continue;
+      const offense = scoreMove(r, c, 'W');
+      const defense = scoreMove(r, c, 'B');
+      const total = offense + defense * 0.85;
+      if (total > bestScore) {
+        bestScore = total;
+        bestMoves = [[r, c]];
+      } else if (total === bestScore) {
+        bestMoves.push([r, c]);
+      }
+    }
+  }
+  if (bestMoves.length === 0) return getEasyMove();
+  return bestMoves[Math.floor(Math.random() * bestMoves.length)];
+}
+
+function getHardMove() {
+  if (history.length === 0) return [Math.floor(SIZE/2), Math.floor(SIZE/2)];
+  let bestScore = -Infinity;
+  let bestMoves = [];
+  // Hard: stronger pattern weighting + 1-ply lookahead for threats
+  for (let r = 0; r < SIZE; r++) {
+    for (let c = 0; c < SIZE; c++) {
+      if (board[r][c]) continue;
+      if (!nearStone(r, c, 2)) continue;
+      const offense = scoreMove(r, c, 'W');
+      const defense = scoreMove(r, c, 'B');
+      // Defense slightly preferred in hard mode (kids' AI shouldn't blunder)
+      const total = Math.max(offense * 1.05, defense * 1.15);
+      if (total > bestScore) {
+        bestScore = total;
+        bestMoves = [[r, c]];
+      } else if (total === bestScore) {
+        bestMoves.push([r, c]);
+      }
+    }
+  }
+  if (bestMoves.length === 0) return getEasyMove();
+  return bestMoves[Math.floor(Math.random() * bestMoves.length)];
+}
+
+function nearStone(r, c, range) {
+  for (let dr = -range; dr <= range; dr++) {
+    for (let dc = -range; dc <= range; dc++) {
+      const rr = r + dr, cc = c + dc;
+      if (rr >= 0 && rr < SIZE && cc >= 0 && cc < SIZE && board[rr][cc]) return true;
+    }
+  }
+  return false;
+}
+
+// Score for placing stone of player p at (r,c) - considers consecutive + open ends
+function scoreMove(r, c, p) {
+  let total = 0;
+  const dirs = [[0,1],[1,0],[1,1],[1,-1]];
+  for (const [dr, dc] of dirs) {
+    let count = 1;
+    let openEnds = 0;
+    let rr = r + dr, cc = c + dc;
+    while (rr >= 0 && rr < SIZE && cc >= 0 && cc < SIZE && board[rr][cc] === p) {
+      count++; rr += dr; cc += dc;
+    }
+    if (rr >= 0 && rr < SIZE && cc >= 0 && cc < SIZE && !board[rr][cc]) openEnds++;
+    rr = r - dr; cc = c - dc;
+    while (rr >= 0 && rr < SIZE && cc >= 0 && cc < SIZE && board[rr][cc] === p) {
+      count++; rr -= dr; cc -= dc;
+    }
+    if (rr >= 0 && rr < SIZE && cc >= 0 && cc < SIZE && !board[rr][cc]) openEnds++;
+    total += scoreLine(count, openEnds);
+  }
+  return total;
+}
+
+function scoreLine(count, openEnds) {
+  if (count >= 5) return 100000;
+  if (count === 4 && openEnds === 2) return 10000;  // open four — guaranteed win
+  if (count === 4 && openEnds === 1) return 1200;   // closed four
+  if (count === 3 && openEnds === 2) return 900;    // open three — must block
+  if (count === 3 && openEnds === 1) return 90;
+  if (count === 2 && openEnds === 2) return 80;
+  if (count === 2 && openEnds === 1) return 10;
+  if (count === 1 && openEnds === 2) return 6;
+  if (count === 1 && openEnds === 1) return 1;
+  return 0;
+}
+
+// ----- Init -----
+drawGrid();
+renderBoard();
+updateStatus();
+
+resetBtn.addEventListener('click', reset);
+undoBtn.addEventListener('click', undo);
+
+modeBtns.forEach(btn => {
+  btn.addEventListener('click', () => {
+    if (btn.classList.contains('active')) return;
+    modeBtns.forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    mode = btn.dataset.mode;
+    difficultyBar.classList.toggle('hidden', mode !== 'ai');
+    scores = { B: 0, W: 0 };
+    scoreB.textContent = 0;
+    scoreW.textContent = 0;
+    reset();
+  });
+});
+
+diffBtns.forEach(btn => {
+  btn.addEventListener('click', () => {
+    if (btn.classList.contains('active')) return;
+    diffBtns.forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    difficulty = btn.dataset.diff;
+    scores = { B: 0, W: 0 };
+    scoreB.textContent = 0;
+    scoreW.textContent = 0;
+    reset();
+  });
+});
+</script>
+</body>
+</html>
