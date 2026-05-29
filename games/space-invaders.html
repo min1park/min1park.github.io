@@ -150,6 +150,7 @@
     overflow: hidden;
     user-select: none;
     -webkit-user-select: none;
+    touch-action: none;
     cursor: pointer;
   }
   canvas { display: block; width: 100%; height: 100%; }
@@ -361,7 +362,7 @@
         <div class="overlay-card" id="overlayCard">
           <div class="overlay-eyebrow" id="ovEyebrow">Ready</div>
           <div class="overlay-title" id="ovTitle">출격 준비</div>
-          <div class="overlay-stat" id="ovStat">방향키와 스페이스 또는<br>아래 버튼으로 조작합니다</div>
+          <div class="overlay-stat" id="ovStat">화면을 손가락으로 좌우로 움직여 조준<br>(자동 발사) · PC는 방향키 + 스페이스</div>
           <button class="overlay-btn" id="ovBtn">시작</button>
         </div>
       </div>
@@ -379,7 +380,8 @@
     </div>
 
     <div class="hint">
-      <span class="kbd">←</span><span class="kbd">→</span> 이동 · <span class="kbd">Space</span> 발사 · <span class="kbd">P</span> 일시정지
+      <strong>모바일</strong> · 화면을 손가락으로 좌우로 움직이면 우주선이 따라오고 자동 발사<br>
+      <strong>PC</strong> · <span class="kbd">←</span><span class="kbd">→</span> 이동 · <span class="kbd">Space</span> 발사 · <span class="kbd">P</span> 일시정지
     </div>
 
     <div class="footer">— Min1 Park · 2026 —</div>
@@ -940,7 +942,7 @@
     overlay.className = 'overlay show';
     ovEyebrow.textContent = 'Ready';
     ovTitle.textContent = '출격 준비';
-    ovStat.innerHTML = '방향키와 스페이스 또는<br>아래 버튼으로 조작합니다';
+    ovStat.innerHTML = '화면을 손가락으로 좌우로 움직여 조준<br>(자동 발사) · PC는 방향키 + 스페이스';
     ovBtn.textContent = '시작';
     ovBtn.onclick = () => startGame();
   }
@@ -1024,6 +1026,43 @@
   ctrlFire.addEventListener('mousedown', startFire);
   ctrlFire.addEventListener('mouseup', stopFire);
   ctrlFire.addEventListener('mouseleave', stopFire);
+
+  // === Drag-to-move on the board (like Breakout) + auto-fire while held ===
+  let boardTouching = false;
+  let touchFireTimer = null;
+
+  function boardX(clientX) {
+    const rect = boardWrap.getBoundingClientRect();
+    const gx = ((clientX - rect.left) / rect.width) * VW;
+    return Math.max(PLAYER_W / 2, Math.min(VW - PLAYER_W / 2, gx));
+  }
+  function dragStart(e) {
+    if (state !== 'playing') return;   // overlay handles ready/over/paused
+    boardTouching = true;
+    const cx = e.touches ? e.touches[0].clientX : e.clientX;
+    player.x = boardX(cx);
+    keys.left = keys.right = false;    // touch position is authoritative
+    tryShoot();
+    if (!touchFireTimer) touchFireTimer = setInterval(tryShoot, 280);
+    if (e.cancelable) e.preventDefault();
+  }
+  function dragMove(e) {
+    if (!boardTouching || state !== 'playing') return;
+    const cx = e.touches ? e.touches[0].clientX : e.clientX;
+    player.x = boardX(cx);
+    if (e.cancelable) e.preventDefault();
+  }
+  function dragEnd() {
+    boardTouching = false;
+    if (touchFireTimer) { clearInterval(touchFireTimer); touchFireTimer = null; }
+  }
+  boardWrap.addEventListener('touchstart', dragStart, { passive: false });
+  boardWrap.addEventListener('touchmove', dragMove, { passive: false });
+  boardWrap.addEventListener('touchend', dragEnd);
+  boardWrap.addEventListener('touchcancel', dragEnd);
+  boardWrap.addEventListener('mousedown', dragStart);
+  window.addEventListener('mousemove', dragMove);
+  window.addEventListener('mouseup', dragEnd);
 
   // Buttons
   newGameBtn.addEventListener('click', () => { init(); startGame(); });
