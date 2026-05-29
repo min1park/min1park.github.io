@@ -211,7 +211,7 @@
         <div class="overlay-card">
           <div class="overlay-eyebrow" id="ovEyebrow">Ready</div>
           <div class="overlay-title" id="ovTitle">땅따먹기</div>
-          <div class="overlay-stat" id="ovStat">화면을 손가락으로 쓸어 방향을 바꿔요.<br>빈 땅을 한 바퀴 돌아 내 땅에 닿으면<br>안쪽이 모두 내 영토가 됩니다.</div>
+          <div class="overlay-stat" id="ovStat">스와이프(또는 방향키)로 출발해요.<br>빈 땅을 한 바퀴 돌아 내 땅에 닿으면 안쪽이 모두 내 영토!<br>벽에 닿아도 죽지 않고 멈춰요.</div>
           <button class="overlay-btn" id="ovBtn">시작</button>
         </div>
       </div>
@@ -269,7 +269,7 @@
   const HEAD = { 1: C.pHead, 2: C.b1Head, 3: C.b2Head };
 
   const G = 32;            // grid size
-  const TICK = 95;         // ms per move
+  const TICK = 120;        // ms per move
   const TARGET = 50;       // win at this %
   const TOTAL = G * G;
 
@@ -337,7 +337,7 @@
     territory = new Int8Array(TOTAL);
     trail = new Int8Array(TOTAL);
     entities = [
-      makeEntity(1, (G / 2) | 0, (G / 2) | 0, 0, false),
+      makeEntity(1, (G / 2) | 0, (G / 2) | 0, -1, false),  // player: stationary until first input
       makeEntity(2, 4, 4, 2, true),
       makeEntity(3, G - 5, G - 5, 0, true),
     ];
@@ -392,7 +392,7 @@
     if (!me.alive) return;
     if (state === 'ready') startGame();
     if (state !== 'playing') return;
-    if (d === opposite(me.dir)) return;   // no instant reverse
+    if (me.dir >= 0 && d === opposite(me.dir)) return;   // no instant reverse (allow any first move)
     me.nextDir = d;
   }
 
@@ -424,11 +424,16 @@
   function stepEntity(e) {
     e.px = e.x; e.py = e.y;
     e.dir = e.nextDir;
+    if (e.dir < 0) return;                  // player hasn't started moving yet
+
     const nx = e.x + DX[e.dir];
     const ny = e.y + DY[e.dir];
 
-    // Edge = death
-    if (nx < 0 || ny < 0 || nx >= G || ny >= G) { killEntity(e); return; }
+    // Edge: bots die (and respawn); the player just stops at the wall (stays alive)
+    if (nx < 0 || ny < 0 || nx >= G || ny >= G) {
+      if (e.isBot) killEntity(e);
+      return;
+    }
     const ni = idx(nx, ny);
 
     // Trail collisions
@@ -648,7 +653,7 @@
     overlay.className = 'overlay show';
     ovEyebrow.textContent = 'Ready';
     ovTitle.textContent = '땅따먹기';
-    ovStat.innerHTML = '화면을 손가락으로 쓸어 방향을 바꿔요.<br>빈 땅을 한 바퀴 돌아 내 땅에 닿으면<br>안쪽이 모두 내 영토가 됩니다.';
+    ovStat.innerHTML = '스와이프(또는 방향키)로 출발해요.<br>빈 땅을 한 바퀴 돌아 내 땅에 닿으면 안쪽이 모두 내 영토!<br>벽에 닿아도 죽지 않고 멈춰요.';
     ovBtn.textContent = '시작';
     ovBtn.onclick = () => startGame();
   }
