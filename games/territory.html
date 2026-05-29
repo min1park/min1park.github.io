@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Territory · 땅따먹기</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=Noto+Serif+KR:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F5F1EA;
+    --bg-elev: #FBF8F2;
+    --ink: #1B365D;
+    --ink-soft: #5A6B82;
+    --line: #D4CCBC;
+    --gold: #B8935A;
+    --gold-deep: #8A6A38;
+    --teal: #3E8E8E;
+    --purple: #7E5AA0;
+    --danger: #B85A4A;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    font-family: "EB Garamond", "Noto Serif KR", Georgia, serif;
+    background: var(--bg);
+    background-image:
+      radial-gradient(circle at 20% 10%, rgba(184, 147, 90, 0.06), transparent 40%),
+      radial-gradient(circle at 80% 90%, rgba(27, 54, 93, 0.05), transparent 40%);
+    color: var(--ink);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px 12px;
+    -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+  .frame { width: 100%; max-width: 420px; }
+
+  .header { text-align: center; margin-bottom: 16px; }
+  .eyebrow {
+    font-size: 0.7rem; letter-spacing: 0.35em; text-transform: uppercase;
+    color: var(--ink-soft); margin-bottom: 6px;
+  }
+  .title {
+    font-family: "EB Garamond", serif; font-style: italic; font-weight: 500;
+    font-size: 2.2rem; line-height: 1;
+  }
+  .title::after {
+    content: ""; display: block; width: 32px; height: 1px;
+    background: var(--gold); margin: 12px auto 0;
+  }
+
+  .stats {
+    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1px;
+    background: var(--line); border: 1px solid var(--line); margin-bottom: 8px;
+  }
+  .stat-cell { background: var(--bg-elev); padding: 8px 4px; text-align: center; }
+  .stat-label {
+    font-size: 0.6rem; letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--ink-soft); margin-bottom: 2px;
+  }
+  .stat-value {
+    font-family: "EB Garamond", serif; font-size: 1.15rem; font-weight: 500;
+    font-variant-numeric: tabular-nums;
+  }
+  .stat-cell.me .stat-value { color: var(--gold-deep); }
+  .stat-cell.best .stat-value { color: var(--gold); font-style: italic; }
+
+  /* Progress to target */
+  .progress {
+    height: 6px; background: var(--line); margin-bottom: 10px; position: relative;
+    border: 1px solid var(--line);
+  }
+  .progress-fill {
+    position: absolute; left: 0; top: 0; bottom: 0; width: 0%;
+    background: var(--gold); transition: width 0.2s ease;
+  }
+  .progress-target {
+    position: absolute; top: -3px; bottom: -3px; width: 2px; background: var(--ink);
+  }
+
+  .status {
+    text-align: center; font-size: 0.86rem; font-style: italic;
+    color: var(--ink-soft); min-height: 20px; margin-bottom: 8px; letter-spacing: 0.02em;
+  }
+  .status.go { color: var(--gold); font-style: normal; letter-spacing: 0.06em; }
+  .status.danger { color: var(--danger); font-style: normal; }
+
+  .board-wrap {
+    position: relative; aspect-ratio: 1; border: 1px solid var(--ink);
+    background: #EDE4D2; margin-bottom: 12px; overflow: hidden;
+    user-select: none; -webkit-user-select: none; touch-action: none; cursor: pointer;
+  }
+  canvas { display: block; width: 100%; height: 100%; }
+
+  .overlay {
+    position: absolute; inset: 0; background: rgba(27, 54, 93, 0.82);
+    backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px);
+    display: none; align-items: center; justify-content: center; padding: 18px; z-index: 5;
+    animation: fadeIn 0.3s ease;
+  }
+  .overlay.show { display: flex; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  .overlay-card {
+    background: var(--bg-elev); border: 1px solid var(--gold); padding: 24px 20px;
+    text-align: center; max-width: 290px; width: 100%; position: relative;
+  }
+  .overlay-card::before, .overlay-card::after {
+    content: ""; position: absolute; width: 16px; height: 16px; border: 1px solid var(--gold);
+  }
+  .overlay-card::before { top: -1px; left: -1px; border-right: none; border-bottom: none; }
+  .overlay-card::after { bottom: -1px; right: -1px; border-left: none; border-top: none; }
+  .overlay-eyebrow {
+    font-size: 0.62rem; letter-spacing: 0.3em; text-transform: uppercase;
+    color: var(--ink-soft); margin-bottom: 7px;
+  }
+  .overlay-title {
+    font-family: "EB Garamond", serif; font-style: italic; font-size: 1.55rem;
+    color: var(--gold); margin-bottom: 12px; line-height: 1.2;
+  }
+  .overlay.gameover .overlay-title { color: var(--ink); font-style: normal; }
+  .overlay.win .overlay-title { color: var(--gold); font-style: normal; }
+  .overlay-stat { font-size: 0.82rem; color: var(--ink-soft); margin-bottom: 14px; line-height: 1.6; }
+  .overlay-stat strong {
+    font-family: "EB Garamond", serif; font-weight: 500; color: var(--ink); font-size: 1.05rem;
+  }
+  .overlay-btn {
+    width: 100%; padding: 11px; border: 1px solid var(--ink); background: var(--ink);
+    color: var(--bg-elev); font-family: inherit; font-size: 0.82rem; letter-spacing: 0.15em;
+    text-transform: uppercase; cursor: pointer; transition: background 0.2s ease;
+  }
+  .overlay-btn:hover { background: var(--gold); border-color: var(--gold); }
+
+  /* D-pad + meta */
+  .pad {
+    display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(2, 1fr);
+    gap: 6px; max-width: 220px; margin: 0 auto 10px;
+  }
+  .pad-btn {
+    padding: 14px 0; background: var(--bg-elev); border: 1px solid var(--line);
+    color: var(--ink); font-size: 1.2rem; cursor: pointer; transition: all 0.1s ease;
+    display: flex; align-items: center; justify-content: center; user-select: none;
+    -webkit-user-select: none;
+  }
+  .pad-btn:active { background: var(--ink); color: var(--bg-elev); transform: scale(0.96); }
+  .pad-up { grid-column: 2; grid-row: 1; }
+  .pad-left { grid-column: 1; grid-row: 2; }
+  .pad-down { grid-column: 2; grid-row: 2; }
+  .pad-right { grid-column: 3; grid-row: 2; }
+
+  .controls-meta { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 10px; }
+  .btn {
+    padding: 11px; background: transparent; border: 1px solid var(--ink); color: var(--ink);
+    font-family: inherit; font-size: 0.82rem; letter-spacing: 0.15em; text-transform: uppercase;
+    cursor: pointer; transition: all 0.2s ease;
+  }
+  .btn:hover, .btn:active { background: var(--ink); color: var(--bg-elev); }
+  .btn.subtle { border-color: var(--line); color: var(--ink-soft); }
+  .btn.subtle:hover { background: var(--ink-soft); color: var(--bg-elev); }
+
+  .hint {
+    text-align: center; font-size: 0.7rem; color: var(--ink-soft);
+    letter-spacing: 0.04em; line-height: 1.7;
+  }
+  .kbd {
+    display: inline-block; padding: 1px 5px; border: 1px solid var(--line);
+    background: var(--bg-elev); font-family: "EB Garamond", serif; font-size: 0.7rem; margin: 0 1px;
+  }
+  .footer {
+    text-align: center; margin-top: 16px; font-size: 0.7rem; letter-spacing: 0.15em;
+    color: var(--ink-soft); text-transform: uppercase;
+  }
+</style>
+</head>
+<body>
+  <div class="frame">
+    <header class="header">
+      <div class="eyebrow">Game · No. 12</div>
+      <h1 class="title">Territory</h1>
+    </header>
+
+    <div class="stats">
+      <div class="stat-cell me">
+        <div class="stat-label">내 영토</div>
+        <div class="stat-value" id="pct">0%</div>
+      </div>
+      <div class="stat-cell">
+        <div class="stat-label">목표</div>
+        <div class="stat-value" id="target">50%</div>
+      </div>
+      <div class="stat-cell best">
+        <div class="stat-label">최고</div>
+        <div class="stat-value" id="best">0%</div>
+      </div>
+    </div>
+
+    <div class="progress">
+      <div class="progress-fill" id="progFill"></div>
+      <div class="progress-target" id="progTarget"></div>
+    </div>
+
+    <div class="status" id="status">시작 버튼을 누르세요</div>
+
+    <div class="board-wrap" id="boardWrap">
+      <canvas id="canvas"></canvas>
+      <div class="overlay show" id="overlay">
+        <div class="overlay-card">
+          <div class="overlay-eyebrow" id="ovEyebrow">Ready</div>
+          <div class="overlay-title" id="ovTitle">땅따먹기</div>
+          <div class="overlay-stat" id="ovStat">화면을 손가락으로 쓸어 방향을 바꿔요.<br>빈 땅을 한 바퀴 돌아 내 땅에 닿으면<br>안쪽이 모두 내 영토가 됩니다.</div>
+          <button class="overlay-btn" id="ovBtn">시작</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="pad">
+      <button class="pad-btn pad-up" data-dir="0" aria-label="위">↑</button>
+      <button class="pad-btn pad-left" data-dir="3" aria-label="왼쪽">←</button>
+      <button class="pad-btn pad-down" data-dir="2" aria-label="아래">↓</button>
+      <button class="pad-btn pad-right" data-dir="1" aria-label="오른쪽">→</button>
+    </div>
+
+    <div class="controls-meta">
+      <button class="btn" id="newGameBtn">새 게임</button>
+      <button class="btn subtle" id="pauseBtn">일시정지</button>
+    </div>
+
+    <div class="hint">
+      <strong>모바일</strong> · 화면을 손가락으로 쓸어 방향 전환 (또는 D패드)<br>
+      <strong>PC</strong> · <span class="kbd">←</span><span class="kbd">↑</span><span class="kbd">↓</span><span class="kbd">→</span> 방향 · <span class="kbd">P</span> 일시정지
+    </div>
+
+    <div class="footer">— Min1 Park · 2026 —</div>
+  </div>
+
+<script>
+  // ===== Setup =====
+  const canvas = document.getElementById('canvas');
+  const ctx = canvas.getContext('2d');
+  const boardWrap = document.getElementById('boardWrap');
+  const pctEl = document.getElementById('pct');
+  const bestEl = document.getElementById('best');
+  const targetEl = document.getElementById('target');
+  const progFill = document.getElementById('progFill');
+  const progTarget = document.getElementById('progTarget');
+  const statusEl = document.getElementById('status');
+  const overlay = document.getElementById('overlay');
+  const ovEyebrow = document.getElementById('ovEyebrow');
+  const ovTitle = document.getElementById('ovTitle');
+  const ovStat = document.getElementById('ovStat');
+  const ovBtn = document.getElementById('ovBtn');
+  const newGameBtn = document.getElementById('newGameBtn');
+  const pauseBtn = document.getElementById('pauseBtn');
+
+  const C = {
+    empty: '#EDE4D2',
+    grid: 'rgba(120,100,70,0.08)',
+    pTerr: '#B8935A', pTrail: 'rgba(184,147,90,0.5)', pHead: '#7d5e2f',
+    b1Terr: '#3E8E8E', b1Trail: 'rgba(62,142,142,0.45)', b1Head: '#1f5b5b',
+    b2Terr: '#7E5AA0', b2Trail: 'rgba(126,90,160,0.45)', b2Head: '#4a2f6b',
+  };
+  // id 1 = player, 2 = bot1, 3 = bot2
+  const TERR = { 1: C.pTerr, 2: C.b1Terr, 3: C.b2Terr };
+  const TRAIL = { 1: C.pTrail, 2: C.b1Trail, 3: C.b2Trail };
+  const HEAD = { 1: C.pHead, 2: C.b1Head, 3: C.b2Head };
+
+  const G = 32;            // grid size
+  const TICK = 95;         // ms per move
+  const TARGET = 50;       // win at this %
+  const TOTAL = G * G;
+
+  const DX = [0, 1, 0, -1]; // 0 up, 1 right, 2 down, 3 left
+  const DY = [-1, 0, 1, 0];
+  const opposite = d => (d + 2) % 4;
+
+  let territory = new Int8Array(TOTAL);
+  let trail = new Int8Array(TOTAL);
+  let entities = [];
+  let counts = { 1: 0, 2: 0, 3: 0 };
+  let state = 'ready';     // ready, playing, paused, over, win
+  let lastTick = 0;
+  let rafId = null;
+  let best = loadBest();
+
+  function idx(x, y) { return y * G + x; }
+  function loadBest() {
+    try { return parseInt(localStorage.getItem('gterritory-best') || '0') || 0; }
+    catch (e) { return 0; }
+  }
+  function saveBest(v) { try { localStorage.setItem('gterritory-best', String(v)); } catch (e) {} }
+
+  // ===== Canvas sizing =====
+  function resizeCanvas() {
+    const dpr = window.devicePixelRatio || 1;
+    const rect = boardWrap.getBoundingClientRect();
+    if (rect.width < 1) return;
+    canvas.width = Math.round(rect.width * dpr);
+    canvas.height = Math.round(rect.height * dpr);
+    const scale = rect.width / G;       // 1 game unit = 1 cell
+    ctx.setTransform(dpr * scale, 0, 0, dpr * scale, 0, 0);
+  }
+  window.addEventListener('resize', resizeCanvas);
+  window.addEventListener('load', resizeCanvas);
+
+  // ===== Entity =====
+  function makeEntity(id, cx, cy, dir, isBot) {
+    return { id, x: cx, y: cy, px: cx, py: cy, dir, nextDir: dir, isBot, alive: true, trail: [], plan: [] };
+  }
+
+  function seedTerritory(id, cx, cy) {
+    for (let dy = -1; dy <= 1; dy++)
+      for (let dx = -1; dx <= 1; dx++) {
+        const x = cx + dx, y = cy + dy;
+        if (x >= 0 && y >= 0 && x < G && y < G) territory[idx(x, y)] = id;
+      }
+  }
+
+  function recomputeCounts() {
+    counts = { 1: 0, 2: 0, 3: 0 };
+    for (let i = 0; i < TOTAL; i++) {
+      const v = territory[i];
+      if (v) counts[v]++;
+    }
+    const p = Math.round(counts[1] / TOTAL * 100);
+    pctEl.textContent = p + '%';
+    progFill.style.width = Math.min(100, p / TARGET * 100) + '%';
+    if (p > best) { best = p; bestEl.textContent = best + '%'; saveBest(best); }
+    return p;
+  }
+
+  // ===== Init =====
+  function init() {
+    territory = new Int8Array(TOTAL);
+    trail = new Int8Array(TOTAL);
+    entities = [
+      makeEntity(1, (G / 2) | 0, (G / 2) | 0, 0, false),
+      makeEntity(2, 4, 4, 2, true),
+      makeEntity(3, G - 5, G - 5, 0, true),
+    ];
+    for (const e of entities) seedTerritory(e.id, e.x, e.y);
+    state = 'ready';
+    bestEl.textContent = best + '%';
+    targetEl.textContent = TARGET + '%';
+    progTarget.style.left = '100%';
+    recomputeCounts();
+    statusEl.textContent = '시작 버튼을 누르세요';
+    statusEl.className = 'status';
+    pauseBtn.textContent = '일시정지';
+    showStartOverlay();
+    if (rafId) cancelAnimationFrame(rafId);
+    lastTick = performance.now();
+    rafId = requestAnimationFrame(loop);
+  }
+
+  function startGame() {
+    state = 'playing';
+    overlay.classList.remove('show');
+    statusEl.textContent = '영토를 넓히세요';
+    statusEl.className = 'status go';
+    lastTick = performance.now();
+  }
+
+  function pause() {
+    if (state !== 'playing') return;
+    state = 'paused';
+    pauseBtn.textContent = '재개';
+    statusEl.textContent = '일시정지';
+    statusEl.className = 'status';
+    showPauseOverlay();
+  }
+  function resume() {
+    if (state !== 'paused') return;
+    state = 'playing';
+    pauseBtn.textContent = '일시정지';
+    statusEl.textContent = '영토를 넓히세요';
+    statusEl.className = 'status go';
+    overlay.classList.remove('show');
+    lastTick = performance.now();
+  }
+  function togglePause() {
+    if (state === 'playing') pause();
+    else if (state === 'paused') resume();
+  }
+
+  // ===== Player input =====
+  function setDir(d) {
+    const me = entities[0];
+    if (!me.alive) return;
+    if (state === 'ready') startGame();
+    if (state !== 'playing') return;
+    if (d === opposite(me.dir)) return;   // no instant reverse
+    me.nextDir = d;
+  }
+
+  // ===== Game tick =====
+  function loop(now) {
+    rafId = requestAnimationFrame(loop);
+    if (state === 'playing') {
+      let guard = 0;
+      while (now - lastTick >= TICK && guard < 5) {
+        tick();
+        lastTick += TICK;
+        guard++;
+      }
+    } else {
+      lastTick = now;
+    }
+    draw(now);
+  }
+
+  function tick() {
+    for (const e of entities) {
+      if (!e.alive) continue;
+      if (e.isBot) botPlan(e);
+      stepEntity(e);
+      if (state === 'over' || state === 'win') return;
+    }
+  }
+
+  function stepEntity(e) {
+    e.px = e.x; e.py = e.y;
+    e.dir = e.nextDir;
+    const nx = e.x + DX[e.dir];
+    const ny = e.y + DY[e.dir];
+
+    // Edge = death
+    if (nx < 0 || ny < 0 || nx >= G || ny >= G) { killEntity(e); return; }
+    const ni = idx(nx, ny);
+
+    // Trail collisions
+    if (trail[ni] === e.id) { killEntity(e); return; }        // own trail -> die
+    if (trail[ni] !== 0 && trail[ni] !== e.id) {              // enemy trail -> cut them
+      const victim = entities.find(v => v.id === trail[ni]);
+      if (victim) killEntity(victim);
+    }
+
+    // Move
+    e.x = nx; e.y = ny;
+
+    if (territory[ni] === e.id) {
+      if (e.trail.length > 0) { claimFor(e); recomputeCounts(); checkWinLose(e); }
+    } else {
+      if (trail[ni] !== e.id) { trail[ni] = e.id; e.trail.push(ni); }
+    }
+  }
+
+  function killEntity(e) {
+    for (let i = 0; i < TOTAL; i++) {
+      if (trail[i] === e.id) trail[i] = 0;
+      if (territory[i] === e.id) territory[i] = 0;
+    }
+    e.trail = [];
+    e.alive = false;
+    if (e.isBot) {
+      respawnBot(e);
+    } else {
+      gameOver();
+    }
+  }
+
+  function respawnBot(e) {
+    // Find a random empty-ish 3x3 spot
+    for (let tryN = 0; tryN < 40; tryN++) {
+      const cx = 2 + ((Math.random() * (G - 4)) | 0);
+      const cy = 2 + ((Math.random() * (G - 4)) | 0);
+      let ok = true;
+      for (let dy = -1; dy <= 1 && ok; dy++)
+        for (let dx = -1; dx <= 1 && ok; dx++)
+          if (territory[idx(cx + dx, cy + dy)] !== 0) ok = false;
+      if (ok) {
+        e.x = e.px = cx; e.y = e.py = cy;
+        e.dir = e.nextDir = (Math.random() * 4) | 0;
+        e.alive = true; e.trail = []; e.plan = [];
+        seedTerritory(e.id, cx, cy);
+        recomputeCounts();
+        return;
+      }
+    }
+    // give up this tick; try again next tick
+    e.alive = true; e.trail = []; e.plan = [];
+  }
+
+  // ===== Claim enclosed area (flood fill from outside) =====
+  function claimFor(e) {
+    const id = e.id;
+    for (const i of e.trail) { territory[i] = id; trail[i] = 0; }
+    e.trail = [];
+    const outside = new Uint8Array(TOTAL);
+    const stack = [];
+    const seed = (x, y) => {
+      const i = idx(x, y);
+      if (territory[i] !== id && !outside[i]) { outside[i] = 1; stack.push(i); }
+    };
+    for (let x = 0; x < G; x++) { seed(x, 0); seed(x, G - 1); }
+    for (let y = 0; y < G; y++) { seed(0, y); seed(G - 1, y); }
+    while (stack.length) {
+      const i = stack.pop();
+      const x = i % G, y = (i / G) | 0;
+      if (x + 1 < G) seed(x + 1, y);
+      if (x - 1 >= 0) seed(x - 1, y);
+      if (y + 1 < G) seed(x, y + 1);
+      if (y - 1 >= 0) seed(x, y - 1);
+    }
+    for (let i = 0; i < TOTAL; i++) {
+      if (!outside[i] && territory[i] !== id) {
+        // steal: also clear any foreign trail marker here
+        territory[i] = id;
+        if (trail[i] !== 0 && trail[i] !== id) {
+          const victim = entities.find(v => v.id === trail[i]);
+          trail[i] = 0;
+          if (victim) { victim.trail = victim.trail.filter(t => t !== i); }
+        }
+      }
+    }
+  }
+
+  function checkWinLose(e) {
+    if (e.id !== 1) return;
+    const p = Math.round(counts[1] / TOTAL * 100);
+    if (p >= TARGET) winGame();
+  }
+
+  function gameOver() {
+    state = 'over';
+    const p = recomputeCounts();
+    statusEl.textContent = '게임 오버';
+    statusEl.className = 'status danger';
+    if (navigator.vibrate) navigator.vibrate(50);
+    setTimeout(() => showGameOverOverlay(p), 350);
+  }
+  function winGame() {
+    state = 'win';
+    const p = recomputeCounts();
+    statusEl.textContent = '정복 완료!';
+    statusEl.className = 'status go';
+    setTimeout(() => showWinOverlay(p), 250);
+  }
+
+  // ===== Bot AI: trace small rectangles out and back =====
+  function botPlan(e) {
+    if (e.plan.length > 0) {
+      e.nextDir = e.plan.shift();
+      return;
+    }
+    const inOwn = territory[idx(e.x, e.y)] === e.id;
+    if (inOwn) {
+      // start a new excursion: out `a`, side `b`, back `a`, close
+      const outDir = (Math.random() * 4) | 0;
+      const sideDir = Math.random() < 0.5 ? (outDir + 1) % 4 : (outDir + 3) % 4;
+      const a = 2 + ((Math.random() * 4) | 0);
+      const b = 2 + ((Math.random() * 4) | 0);
+      const plan = [];
+      for (let i = 0; i < a; i++) plan.push(outDir);
+      for (let i = 0; i < b; i++) plan.push(sideDir);
+      for (let i = 0; i < a; i++) plan.push(opposite(outDir));
+      e.plan = plan;
+      e.nextDir = e.plan.shift();
+    } else {
+      // head back toward own territory greedily, avoid own trail
+      e.nextDir = headHome(e);
+    }
+  }
+
+  function headHome(e) {
+    // find nearest own-territory cell, step toward it
+    let bestD = Infinity, target = null;
+    for (let i = 0; i < TOTAL; i++) {
+      if (territory[i] === e.id) {
+        const x = i % G, y = (i / G) | 0;
+        const d = Math.abs(x - e.x) + Math.abs(y - e.y);
+        if (d < bestD) { bestD = d; target = { x, y }; }
+      }
+    }
+    if (!target) return e.dir;
+    const options = [];
+    if (target.x > e.x) options.push(1);
+    if (target.x < e.x) options.push(3);
+    if (target.y > e.y) options.push(2);
+    if (target.y < e.y) options.push(0);
+    for (const d of options) {
+      if (d === opposite(e.dir)) continue;
+      const nx = e.x + DX[d], ny = e.y + DY[d];
+      if (nx < 0 || ny < 0 || nx >= G || ny >= G) continue;
+      if (trail[idx(nx, ny)] === e.id) continue;
+      return d;
+    }
+    // fallback: any safe non-reverse dir
+    for (let d = 0; d < 4; d++) {
+      if (d === opposite(e.dir)) continue;
+      const nx = e.x + DX[d], ny = e.y + DY[d];
+      if (nx < 0 || ny < 0 || nx >= G || ny >= G) continue;
+      if (trail[idx(nx, ny)] === e.id) continue;
+      return d;
+    }
+    return e.dir;
+  }
+
+  // ===== Draw =====
+  function draw(now) {
+    ctx.fillStyle = C.empty;
+    ctx.fillRect(0, 0, G, G);
+
+    // territory
+    for (let i = 0; i < TOTAL; i++) {
+      const v = territory[i];
+      if (v) {
+        ctx.fillStyle = TERR[v];
+        ctx.fillRect(i % G, (i / G) | 0, 1, 1);
+      }
+    }
+    // trails
+    for (let i = 0; i < TOTAL; i++) {
+      const v = trail[i];
+      if (v) {
+        ctx.fillStyle = TRAIL[v];
+        ctx.fillRect(i % G, (i / G) | 0, 1, 1);
+      }
+    }
+    // grid lines (subtle)
+    ctx.strokeStyle = C.grid;
+    ctx.lineWidth = 0.04;
+    ctx.beginPath();
+    for (let i = 0; i <= G; i++) {
+      ctx.moveTo(i, 0); ctx.lineTo(i, G);
+      ctx.moveTo(0, i); ctx.lineTo(G, i);
+    }
+    ctx.stroke();
+
+    // heads (interpolated)
+    const prog = state === 'playing' ? Math.min(1, (now - lastTick) / TICK) : 0;
+    for (const e of entities) {
+      if (!e.alive) continue;
+      const ix = e.px + (e.x - e.px) * prog;
+      const iy = e.py + (e.y - e.py) * prog;
+      ctx.fillStyle = HEAD[e.id];
+      ctx.fillRect(ix - 0.05, iy - 0.05, 1.1, 1.1);
+      ctx.fillStyle = TERR[e.id];
+      ctx.fillRect(ix + 0.25, iy + 0.25, 0.5, 0.5);
+    }
+  }
+
+  // ===== Overlays =====
+  function showStartOverlay() {
+    overlay.className = 'overlay show';
+    ovEyebrow.textContent = 'Ready';
+    ovTitle.textContent = '땅따먹기';
+    ovStat.innerHTML = '화면을 손가락으로 쓸어 방향을 바꿔요.<br>빈 땅을 한 바퀴 돌아 내 땅에 닿으면<br>안쪽이 모두 내 영토가 됩니다.';
+    ovBtn.textContent = '시작';
+    ovBtn.onclick = () => startGame();
+  }
+  function showPauseOverlay() {
+    overlay.className = 'overlay show';
+    ovEyebrow.textContent = 'Paused';
+    ovTitle.textContent = '일시정지';
+    ovStat.innerHTML = `현재 영토 · <strong>${Math.round(counts[1] / TOTAL * 100)}%</strong>`;
+    ovBtn.textContent = '재개';
+    ovBtn.onclick = () => resume();
+  }
+  function showGameOverOverlay(p) {
+    overlay.className = 'overlay gameover show';
+    ovEyebrow.textContent = 'Game Over';
+    ovTitle.textContent = '게임 오버';
+    const isRecord = p > 0 && p === best;
+    ovStat.innerHTML = `차지한 영토 · <strong>${p}%</strong>` +
+      (isRecord ? '<br><span style="color:var(--gold);font-style:italic;">최고 기록 갱신</span>' : '');
+    ovBtn.textContent = '다시 시작';
+    ovBtn.onclick = () => { init(); startGame(); };
+  }
+  function showWinOverlay(p) {
+    overlay.className = 'overlay win show';
+    ovEyebrow.textContent = 'Victory';
+    ovTitle.textContent = `목표 달성 · ${p}%`;
+    ovStat.innerHTML = `영토 <strong>${TARGET}%</strong>를 차지했습니다!<br>계속 넓혀보거나 다시 시작하세요.`;
+    ovBtn.textContent = '다시 시작';
+    ovBtn.onclick = () => { init(); startGame(); };
+  }
+
+  // ===== Keyboard =====
+  window.addEventListener('keydown', (e) => {
+    switch (e.key) {
+      case 'ArrowUp': case 'w': case 'W': e.preventDefault(); setDir(0); break;
+      case 'ArrowRight': case 'd': case 'D': e.preventDefault(); setDir(1); break;
+      case 'ArrowDown': case 's': case 'S': e.preventDefault(); setDir(2); break;
+      case 'ArrowLeft': case 'a': case 'A': e.preventDefault(); setDir(3); break;
+      case 'p': case 'P': e.preventDefault(); togglePause(); break;
+      case ' ': case 'Enter':
+        if (state === 'ready') { e.preventDefault(); startGame(); }
+        else if (state === 'over' || state === 'win') { e.preventDefault(); init(); startGame(); }
+        break;
+    }
+  });
+
+  // ===== D-pad =====
+  document.querySelectorAll('.pad-btn').forEach(btn => {
+    const d = +btn.dataset.dir;
+    const press = (ev) => { ev.preventDefault(); setDir(d); };
+    btn.addEventListener('touchstart', press, { passive: false });
+    btn.addEventListener('mousedown', press);
+  });
+
+  // ===== Swipe steering on board =====
+  let sx = 0, sy = 0, swiping = false;
+  const THRESH = 16;
+  function touchStart(e) {
+    if (state === 'ready') startGame();
+    const t = e.touches ? e.touches[0] : e;
+    sx = t.clientX; sy = t.clientY; swiping = true;
+    if (e.cancelable) e.preventDefault();
+  }
+  function touchMove(e) {
+    if (!swiping) return;
+    const t = e.touches ? e.touches[0] : e;
+    const dx = t.clientX - sx, dy = t.clientY - sy;
+    if (Math.max(Math.abs(dx), Math.abs(dy)) >= THRESH) {
+      if (Math.abs(dx) > Math.abs(dy)) setDir(dx > 0 ? 1 : 3);
+      else setDir(dy > 0 ? 2 : 0);
+      sx = t.clientX; sy = t.clientY;   // reset anchor for continuous steering
+    }
+    if (e.cancelable) e.preventDefault();
+  }
+  function touchEnd() { swiping = false; }
+  boardWrap.addEventListener('touchstart', touchStart, { passive: false });
+  boardWrap.addEventListener('touchmove', touchMove, { passive: false });
+  boardWrap.addEventListener('touchend', touchEnd);
+  boardWrap.addEventListener('touchcancel', touchEnd);
+  boardWrap.addEventListener('mousedown', touchStart);
+  window.addEventListener('mousemove', touchMove);
+  window.addEventListener('mouseup', touchEnd);
+
+  // ===== Meta buttons =====
+  newGameBtn.addEventListener('click', () => { init(); startGame(); });
+  pauseBtn.addEventListener('click', () => {
+    if (state === 'ready') startGame();
+    else togglePause();
+  });
+
+  // ===== Boot =====
+  init();
+  resizeCanvas();
+  setTimeout(resizeCanvas, 100);
+</script>
+</body>
+</html>
