@@ -127,8 +127,8 @@
   let state = 'ready';
   let stage = 1;
   let power = 1;
-  let fireRate = 82;
-  let mobSpeed = 5.1;
+  let fireRate = 140;       // ms between shots (was 82 — too frantic for kids)
+  let mobSpeed = 3.8;       // upward speed (was 5.1 — too fast to read)
   let cannon = { x: W/2, targetX: W/2, vx: 0 };
   let mobs = [];
   let enemies = [];
@@ -175,8 +175,8 @@
   function restart(){
     stage = 1;
     power = 1;
-    fireRate = 82;
-    mobSpeed = 5.1;
+    fireRate = 140;
+    mobSpeed = 3.8;
     cannon.x = cannon.targetX = W/2;
     buildStage();
     show('READY','대포를 움직여<br>게이트를 맞춰라',
