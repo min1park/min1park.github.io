@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Mob Control · 몹 컨트롤</title>
+<title>Cascade · 캐스케이드</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=Noto+Serif+KR:wght@400;500&display=swap" rel="stylesheet">
@@ -75,7 +75,7 @@
   <div class="frame">
     <header class="header">
       <div class="eyebrow">Game · No. 15</div>
-      <h1 class="title">Mob Control</h1>
+      <h1 class="title">Cascade</h1>
     </header>
 
     <div class="stats">
@@ -92,7 +92,7 @@
       <div class="overlay show" id="overlay">
         <div class="overlay-card">
           <div class="overlay-eyebrow" id="ovEyebrow">Ready</div>
-          <div class="overlay-title" id="ovTitle">몹 컨트롤</div>
+          <div class="overlay-title" id="ovTitle">캐스케이드</div>
           <div class="overlay-stat" id="ovStat">화면을 좌우로 드래그해 대포를 움직이세요.<br>
             대포에서 군인이 자동으로 발사됩니다.<br>
             <strong style="color:var(--mult)">×2 · ×3</strong> 게이트로 군대를 폭발적으로 늘려<br>
@@ -170,8 +170,8 @@
   let lastTs = 0, lastBlueSpawn = 0;
   let rafId = null;
 
-  function loadBest(){ try { return parseInt(localStorage.getItem('gmobctrl-best')||'1')||1; } catch(e){ return 1; } }
-  function saveBest(v){ try { localStorage.setItem('gmobctrl-best', String(v)); } catch(e){} }
+  function loadBest(){ try { return parseInt(localStorage.getItem('gcascade-best')||'1')||1; } catch(e){ return 1; } }
+  function saveBest(v){ try { localStorage.setItem('gcascade-best', String(v)); } catch(e){} }
 
   // ===== Canvas sizing =====
   function resizeCanvas() {
