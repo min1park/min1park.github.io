@@ -3,457 +3,550 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-<title>Lemonade Stand · 레모네이드 가게</title>
+<title>Lemonade Stand · 레모네이드 사장님</title>
 <style>
   :root{
     --bg:#FDF8EE; --panel:#FFFFFF; --ink:#0A0A0A; --sub:#666666;
     --line:#E8E0D2; --gold:#D4A843; --green:#2C7A4D; --green2:#1E5B38;
-    --red:#D34234; --blue:#1F6FEB; --cream:#FBF3DD; --lemon:#F2C94C; --sky:#BFE3F2;
+    --red:#D34234; --blue:#1F6FEB; --cream:#FBF3DD; --lemon:#F2C94C;
   }
   *{box-sizing:border-box;margin:0;padding:0}
   html,body{height:100%;overflow:hidden;background:var(--bg);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans KR",sans-serif;color:var(--ink);}
-  body{display:flex;align-items:center;justify-content:center;padding:12px;-webkit-tap-highlight-color:transparent;touch-action:none;}
-  .app{width:min(100%,440px);height:min(100vh,820px);display:flex;flex-direction:column;gap:8px;}
-  .top{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:11px 13px;box-shadow:0 8px 24px rgba(10,10,10,.08)}
-  .brand{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:9px}
-  .brand h1{font-size:19px;letter-spacing:-.04em;font-weight:950;line-height:1.05}
-  .brand .tag{font-size:11px;color:var(--sub);font-weight:900;letter-spacing:.1em;text-transform:uppercase}
+  body{display:flex;align-items:center;justify-content:center;padding:10px;-webkit-tap-highlight-color:transparent;touch-action:none;}
+  .app{width:min(100%,440px);height:min(100vh,840px);display:flex;flex-direction:column;gap:7px;}
+  .top{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:10px 12px;box-shadow:0 8px 24px rgba(10,10,10,.08)}
+  .brand{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+  .brand h1{font-size:17px;letter-spacing:-.04em;font-weight:950;line-height:1.05}
+  .brand .tag{font-size:10px;color:var(--sub);font-weight:900;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap}
   .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:5px}
-  .stat{background:var(--cream);border:1px solid var(--line);border-radius:11px;padding:7px 3px;text-align:center;min-width:0}
-  .stat .label{font-size:9.5px;color:var(--sub);font-weight:850;letter-spacing:-.02em;white-space:nowrap}
-  .stat .value{font-size:16px;font-weight:950;letter-spacing:-.03em;font-variant-numeric:tabular-nums;margin-top:1px}
+  .stat{background:var(--cream);border:1px solid var(--line);border-radius:10px;padding:6px 3px;text-align:center;min-width:0}
+  .stat .label{font-size:9px;color:var(--sub);font-weight:850;white-space:nowrap}
+  .stat .value{font-size:15px;font-weight:950;letter-spacing:-.03em;font-variant-numeric:tabular-nums;margin-top:1px}
   .stat.cash .value{color:var(--green)}
-  .stat.stock .value{color:var(--blue)}
-  .stat.day .value{color:var(--gold)}
-  .stat.served .value{color:var(--ink)}
+  .stat.lv .value{color:var(--gold);font-size:13px}
+  .stat.day .value{color:var(--blue)}
+  .stat.stock .value{color:var(--ink)}
 
-  .game-wrap{position:relative;flex:1;min-height:0;background:linear-gradient(180deg,#CFEAF6 0%,#E9F4DA 64%,#DCC9A0 64%,#D2BC8C 100%);border:1px solid var(--ink);border-radius:20px;overflow:hidden;box-shadow:0 12px 32px rgba(10,10,10,.16);touch-action:none;user-select:none}
+  .stage{position:relative;flex:1;min-height:0;border:1px solid var(--ink);border-radius:18px;overflow:hidden;box-shadow:0 12px 32px rgba(10,10,10,.14);touch-action:none;user-select:none}
   canvas{display:block;width:100%;height:100%;}
 
-  .actionbar{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-  .act-btn{position:relative;appearance:none;border:1px solid var(--ink);background:var(--panel);border-radius:14px;padding:12px 8px;font-size:14px;font-weight:950;color:var(--ink);cursor:pointer;touch-action:manipulation;display:flex;flex-direction:column;align-items:center;gap:2px;line-height:1.1}
+  .actionbar{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+  .act-btn{appearance:none;border:1px solid var(--ink);background:var(--panel);border-radius:13px;padding:11px 6px;font-size:13.5px;font-weight:950;color:var(--ink);cursor:pointer;touch-action:manipulation;display:flex;flex-direction:column;align-items:center;gap:1px;line-height:1.1}
+  .act-btn .sub{font-size:10px;font-weight:800;color:var(--sub)}
   .act-btn:active{background:var(--ink);color:#fff}
-  .act-btn .sub{font-size:10.5px;font-weight:800;color:var(--sub)}
   .act-btn:active .sub{color:#ddd}
   .act-btn.make{border-color:var(--green);color:var(--green2)}
   .act-btn.make:active{background:var(--green);color:#fff}
+  .act-btn:disabled{opacity:.4}
 
-  .overlay{position:absolute;inset:0;background:rgba(10,10,10,.80);display:flex;align-items:center;justify-content:center;padding:18px;z-index:20}
-  .overlay.hidden{display:none}
-  .card{width:min(100%,335px);background:var(--panel);border-radius:22px;border:2px solid var(--gold);padding:22px 18px;text-align:center;box-shadow:0 18px 44px rgba(0,0,0,.3)}
-  .eyebrow{font-size:12px;font-weight:950;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin-bottom:8px}
-  .card h2{font-size:24px;letter-spacing:-.05em;line-height:1.1;margin-bottom:10px}
-  .card p{font-size:13.5px;line-height:1.6;color:var(--sub);font-weight:700;margin-bottom:14px}
+  .hint{font-size:11px;line-height:1.4;color:var(--sub);text-align:center;font-weight:700;padding:0 6px;min-height:15px}
+  .footer{text-align:center;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--sub);font-weight:850}
+
+  /* Modal overlay */
+  .overlay{position:fixed;inset:0;background:rgba(10,10,10,.80);display:none;align-items:center;justify-content:center;padding:16px;z-index:30}
+  .overlay.show{display:flex}
+  .card{width:min(100%,360px);max-height:94vh;overflow-y:auto;background:var(--panel);border-radius:20px;border:2px solid var(--gold);padding:20px 18px;text-align:center;box-shadow:0 18px 44px rgba(0,0,0,.32)}
+  .eyebrow{font-size:11px;font-weight:950;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin-bottom:7px}
+  .card h2{font-size:23px;letter-spacing:-.05em;line-height:1.1;margin-bottom:10px}
+  .card p{font-size:13.5px;line-height:1.55;color:var(--sub);font-weight:700;margin-bottom:13px}
   .card p strong{color:var(--ink);font-weight:950}
-  .btn-main{appearance:none;border:0;border-radius:14px;background:var(--ink);color:#fff;padding:13px 16px;width:100%;font-weight:950;font-size:15px;cursor:pointer;touch-action:manipulation;position:relative;z-index:2}
-  .result-line{display:flex;justify-content:space-between;align-items:baseline;padding:8px 0;border-bottom:1px dashed var(--line);font-size:14px;font-weight:800}
-  .result-line:last-of-type{border-bottom:0}
-  .result-line .v{font-variant-numeric:tabular-nums;font-weight:950}
-  .result-line.big .v{font-size:22px}
-  .result-line.big.profit .v{color:var(--green)}
-  .result-line.big.loss .v{color:var(--red)}
+  .btn-main{appearance:none;border:0;border-radius:13px;background:var(--ink);color:#fff;padding:13px 16px;width:100%;font-weight:950;font-size:15px;cursor:pointer;touch-action:manipulation}
+  .btn-main:disabled{opacity:.4}
+  .btn-ghost{appearance:none;border:1px solid var(--line);background:transparent;border-radius:12px;padding:10px;width:100%;font-weight:900;font-size:12.5px;color:var(--sub);cursor:pointer;margin-top:7px}
 
-  .hint{font-size:11.5px;line-height:1.45;color:var(--sub);text-align:center;font-weight:700;padding:0 8px}
-  .footer{text-align:center;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--sub);font-weight:850}
+  /* Change-making */
+  .change-info{background:var(--cream);border-radius:12px;padding:11px;margin-bottom:12px;font-size:14px;font-weight:850;line-height:1.5}
+  .change-info .big{font-size:20px;font-weight:950;color:var(--blue)}
+  .tray{display:flex;align-items:center;justify-content:center;gap:5px;flex-wrap:wrap;min-height:42px;background:#F2F4F8;border-radius:10px;padding:8px;margin-bottom:8px}
+  .tray .chip{font-size:13px;font-weight:900;background:#fff;border:1px solid var(--line);border-radius:20px;padding:4px 9px}
+  .tray .empty{color:var(--sub);font-weight:700;font-size:12px}
+  .money-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:8px}
+  .money-btn{appearance:none;border:1px solid var(--ink);border-radius:11px;padding:11px 4px;font-size:13px;font-weight:950;cursor:pointer;background:var(--panel);color:var(--ink);touch-action:manipulation}
+  .money-btn:active{background:var(--ink);color:#fff}
+  .money-btn.coin{background:#FBF3DD}
+  .money-btn.bill{background:#E8F0DC}
+  .change-total{font-size:15px;font-weight:950;margin-bottom:10px}
+  .change-total .ok{color:var(--green)}
+  .change-total .over{color:var(--red)}
+
+  /* Ledger (마감 계산) */
+  .ledger-q{text-align:left;background:var(--cream);border-radius:12px;padding:12px;margin-bottom:10px}
+  .ledger-q .qline{font-size:13.5px;font-weight:800;margin-bottom:7px;line-height:1.4}
+  .ledger-q .formula{font-size:12px;color:var(--sub);font-weight:700;margin-bottom:8px}
+  .ledger-input{width:100%;font-size:22px;font-weight:950;text-align:center;font-variant-numeric:tabular-nums;background:#F2F4F8;border:2px solid var(--line);border-radius:10px;padding:9px;color:var(--ink);min-height:54px;display:flex;align-items:center;justify-content:center}
+  .ledger-input.correct{background:#D8F0E2;border-color:var(--green)}
+  .ledger-input.wrong{background:#F8DEDA;border-color:var(--red)}
+  .numpad{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:10px}
+  .key{appearance:none;border:1px solid var(--line);background:var(--panel);border-radius:11px;padding:13px 0;font-size:19px;font-weight:950;color:var(--ink);cursor:pointer;touch-action:manipulation}
+  .key:active{background:var(--ink);color:#fff}
+  .key.action{background:var(--blue);color:#fff;border-color:var(--blue)}
+  .key.del{background:#F2F4F8;color:var(--sub)}
+  .feedback{font-size:13px;font-weight:850;min-height:18px;margin-top:8px}
+  .feedback.ok{color:var(--green)}
+  .feedback.no{color:var(--red)}
+  .hidden{display:none!important}
 </style>
 </head>
 <body>
 <div class="app">
   <section class="top">
     <div class="brand">
-      <h1>레모네이드 가게</h1>
+      <h1 id="shopName">🛣️ 길바닥 레모네이드</h1>
       <div class="tag">Game · No. 19</div>
     </div>
     <div class="stats">
-      <div class="stat day"><div class="label">날</div><div class="value" id="dayEl">1/5</div></div>
+      <div class="stat day"><div class="label">날</div><div class="value" id="dayEl">1</div></div>
       <div class="stat cash"><div class="label">내 돈</div><div class="value" id="cashEl">5,000</div></div>
       <div class="stat stock"><div class="label">재고🥤</div><div class="value" id="stockEl">5</div></div>
-      <div class="stat served"><div class="label">손님</div><div class="value" id="servedEl">0</div></div>
+      <div class="stat lv"><div class="label">가게</div><div class="value" id="lvEl">길바닥</div></div>
     </div>
   </section>
 
-  <main class="game-wrap" id="gameWrap">
+  <main class="stage" id="stage">
     <canvas id="game"></canvas>
-
-    <!-- Start / Day intro / Result / End -->
-    <div class="overlay" id="overlay">
-      <div class="card" id="ovCard">
-        <div class="eyebrow" id="ovEyebrow">Ready</div>
-        <h2 id="ovTitle">레모네이드 가게</h2>
-        <div id="ovBody"></div>
-        <button class="btn-main" id="ovBtn" style="margin-top:6px;">시작</button>
-      </div>
-    </div>
   </main>
 
   <div class="actionbar">
-    <button class="act-btn make" id="makeBtn">🍋 레모네이드 만들기<span class="sub">5잔 / 재료비 <span id="batchCost">3,500</span>원</span></button>
-    <button class="act-btn" id="serveBtn">🥤 손님에게 주기<span class="sub">맨 앞 손님에게 한 잔</span></button>
+    <button class="act-btn make" id="makeBtn">🍋 만들기<span class="sub">5잔 / <span id="batchCost">3,500</span>원</span></button>
+    <button class="act-btn" id="serveBtn">🥤 손님 받기<span class="sub">맨 앞 손님에게</span></button>
   </div>
-  <div class="hint" id="hintBar">맨 앞 손님이 원하는 잔 수만큼 "주기"를 누르세요 · 재고가 없으면 "만들기"</div>
+  <div class="hint" id="hintBar">손님이 오면 "손님 받기"로 음료를 건네고 거스름돈을 만들어 주세요</div>
   <div class="footer">— Min1 Park · 2026 —</div>
+</div>
+
+<!-- Generic overlay (start / change / ledger / result / upgrade / end) -->
+<div class="overlay" id="overlay">
+  <div class="card" id="card"></div>
 </div>
 
 <script>
 (() => {
   const $ = id => document.getElementById(id);
-  const canvas = $('game'), ctx = canvas.getContext('2d'), wrap = $('gameWrap');
-
-  // roundRect polyfill for older tablet browsers
-  if (!ctx.roundRect) {
-    CanvasRenderingContext2D.prototype.roundRect = function(x,y,w,h,r){
-      if (typeof r === 'number') r = {tl:r,tr:r,br:r,bl:r};
-      else if (Array.isArray(r)) r = {tl:r[0],tr:r[0],br:r[0],bl:r[0]};
-      this.beginPath();
-      this.moveTo(x+r.tl,y);
-      this.lineTo(x+w-r.tr,y); this.quadraticCurveTo(x+w,y,x+w,y+r.tr);
-      this.lineTo(x+w,y+h-r.br); this.quadraticCurveTo(x+w,y+h,x+w-r.br,y+h);
-      this.lineTo(x+r.bl,y+h); this.quadraticCurveTo(x,y+h,x,y+h-r.bl);
-      this.lineTo(x,y+r.tl); this.quadraticCurveTo(x,y,x+r.tl,y);
-      this.closePath();
-      return this;
-    };
-  }
-  const dayEl=$('dayEl'), cashEl=$('cashEl'), stockEl=$('stockEl'), servedEl=$('servedEl');
-  const overlay=$('overlay'), ovEyebrow=$('ovEyebrow'), ovTitle=$('ovTitle'), ovBody=$('ovBody'), ovBtn=$('ovBtn');
+  const canvas=$('game'), ctx=canvas.getContext('2d'), stage=$('stage');
+  const dayEl=$('dayEl'), cashEl=$('cashEl'), stockEl=$('stockEl'), lvEl=$('lvEl'), shopName=$('shopName');
   const makeBtn=$('makeBtn'), serveBtn=$('serveBtn'), batchCost=$('batchCost'), hintBar=$('hintBar');
+  const overlay=$('overlay'), card=$('card');
 
-  const W=420, H=600;
-  const TOTAL_DAYS=5, START_CASH=5000, GOAL=25000;
-  const DAY_SECONDS=45;            // each day lasts this long
-  const PRICE=1500;                // price per cup (fixed, kept simple)
-  const BATCH=5, BATCH_COST=3500;  // make 5 cups for 3,500 (700 each)
-  const UNIT_COST=BATCH_COST/BATCH;
+  // roundRect polyfill
+  if(!ctx.roundRect){ CanvasRenderingContext2D.prototype.roundRect=function(x,y,w,h,r){if(typeof r==='number')r={tl:r,tr:r,br:r,bl:r};this.beginPath();this.moveTo(x+r.tl,y);this.lineTo(x+w-r.tr,y);this.quadraticCurveTo(x+w,y,x+w,y+r.tr);this.lineTo(x+w,y+h-r.br);this.quadraticCurveTo(x+w,y+h,x+w-r.br,y+h);this.lineTo(x+r.bl,y+h);this.quadraticCurveTo(x,y+h,x,y+h-r.bl);this.lineTo(x,y+r.tl);this.quadraticCurveTo(x,y,x+r.tl,y);this.closePath();return this;}; }
+
+  const W=420, H=560;
+
+  // ===== Shop levels =====
+  const LEVELS = [
+    { name:'길바닥',   icon:'🛣️', price:1500, batch:5,  cost:3500, sky:['#CFEAF6','#E9F4DA'], ground:'#C8B68C', need:0 },
+    { name:'매대',     icon:'🪧', price:2000, batch:8,  cost:5200, sky:['#CFEAF6','#E9F4DA'], ground:'#BFa874', need:15000 },
+    { name:'푸드트럭', icon:'🚚', price:2500, batch:12, cost:7200, sky:['#FBE3C7','#F4E4C2'], ground:'#A88D5E', need:40000 },
+    { name:'작은 가게',icon:'🏪', price:3000, batch:16, cost:8800, sky:['#E5DCF5','#EFE7DA'], ground:'#9C835A', need:80000 },
+    { name:'큰 가게',  icon:'🏬', price:3500, batch:20, cost:10000,sky:['#DCE9F7','#E8EEDC'], ground:'#8E7B58', need:140000 },
+    { name:'럭셔리',   icon:'✨', price:4500, batch:24, cost:11000,sky:['#1B2A4A','#3A2C5A'], ground:'#5A4A6A', need:240000 },
+  ];
 
   // ===== State =====
-  let state='ready';               // ready | playing | result | over
-  let day=1, cash=START_CASH, stock=5, servedToday=0, servedTotal=0;
-  let revenueToday=0, costToday=0;
-  let customers=[];                // queue
-  let fx=[];
+  let state='ready';   // ready | playing | changing | ledger | result | upgrade | over
+  let level=0, day=1, cash=5000, stock=5, lifetimeProfit=0;
+  let customers=[], fx=[];
   let dayStart=0, lastTs=0, lastSpawn=0, spawnGap=2000, raf=null;
-  let leftToday=0;                 // angry leavers
+  // per-day accounting (the truth, used to grade player's input)
+  let soldToday=0, revenueTrue=0, costTrue=0, leftToday=0;
+  const DAY_SECONDS=40;
 
+  // change-making transient
+  let change=null; // {due, tray:[], paid, custColor}
+  const MONEY=[ {v:5000,label:'5천',cls:'bill'},{v:1000,label:'1천',cls:'bill'},{v:500,label:'500',cls:'coin'},
+                {v:100,label:'100',cls:'coin'},{v:50,label:'50',cls:'coin'},{v:10,label:'10',cls:'coin'} ];
+
+  // ledger transient
+  let ledger=null; // {step, input, vals:{revenue,cost,profit}}
+
+  function L(){ return LEVELS[level]; }
   function fmt(n){ return n.toLocaleString('ko-KR'); }
   function now(){ return performance.now(); }
   function rnd(a,b){ return a+Math.random()*(b-a); }
 
   // ===== Customer =====
-  // patience in ms; wants 1-3 cups; y position in queue
   function makeCustomer(){
-    const wants = 1 + (Math.random()<0.6?0 : Math.random()<0.7?1:2); // mostly 1, some 2-3
-    const patience = rnd(7000, 11000);
-    const palette = ['#E07A5F','#81B29A','#6A8CC7','#C9A227','#B5838D','#6D6875','#457B9D'];
-    return {
-      wants, got:0, patience, born:now(),
-      color: palette[(Math.random()*palette.length)|0],
-      x: W/2 + rnd(-12,12), targetSlot:0, happy:null, leaving:false, leaveAt:0,
-      bob: Math.random()*Math.PI*2,
-    };
+    const wants = Math.random()<0.62?1 : Math.random()<0.7?2:3;
+    const patience = rnd(8000, 12000);
+    const palette=['#E07A5F','#81B29A','#6A8CC7','#C9A227','#B5838D','#6D6875','#457B9D','#E8A0BF'];
+    return { wants, got:0, patience, born:now(), color:palette[(Math.random()*palette.length)|0],
+             x:W/2, slot:0, done:false, leaving:false, leaveAt:0, doneAt:0, bob:Math.random()*7 };
   }
+  function spawnGapForLevel(){ return Math.max(800, 2000 - level*200 + rnd(-300,300)); }
 
-  function spawnGapForDay(){
-    // busier on later days
-    return Math.max(900, 2100 - day*180 + rnd(-250,250));
-  }
+  // ===== Overlay helpers =====
+  function openOverlay(html){ card.innerHTML=html; overlay.classList.add('show'); }
+  function closeOverlay(){ overlay.classList.remove('show'); }
 
   // ===== Flow =====
-  function show(eyebrow,title,bodyHtml,btnText,btnFn){
-    overlay.classList.remove('hidden');
-    ovEyebrow.textContent=eyebrow; ovTitle.textContent=title;
-    ovBody.innerHTML=bodyHtml; ovBtn.textContent=btnText; ovBtn.onclick=btnFn;
-  }
-  function fullReset(){
-    day=1; cash=START_CASH; stock=5; servedTotal=0;
-    showStart();
-  }
   function showStart(){
-    state='ready';
-    updateHUD();
-    show('Ready','레모네이드 가게',
-      `5일 동안 장사해서 <strong>목표 ${fmt(GOAL)}원</strong>을 모아요!<br><br>` +
-      `손님이 줄을 서요. 머리 위 <strong>🥤숫자</strong>가 원하는 잔 수예요.<br>` +
-      `<strong>주기</strong> 버튼으로 한 잔씩 건네고, 재고가 없으면 <strong>만들기</strong>(5잔 ${fmt(BATCH_COST)}원).<br>` +
-      `너무 오래 기다리면 손님이 화나서 가버려요! 😡<br><br>` +
-      `<strong>이익 = 번 돈 − 재료비</strong>`,
-      '시작', startDay);
-  }
-  function startDay(){
-    state='playing';
-    overlay.classList.add('hidden');
-    customers=[]; fx=[];
-    servedToday=0; revenueToday=0; costToday=0; leftToday=0;
-    dayStart=now(); lastTs=now(); lastSpawn=0; spawnGap=spawnGapForDay();
-    if(!raf) raf=requestAnimationFrame(loop);
-    updateHUD();
-  }
-  function endDay(){
-    state='result';
-    const profit = revenueToday - costToday;
-    show('Day '+day+' 결산', day+'일차 마감 📊',
-      `<div class="result-line"><span>판 잔 수</span><span class="v">${servedToday}잔</span></div>` +
-      `<div class="result-line"><span>번 돈 (매출)</span><span class="v">+${fmt(revenueToday)}원</span></div>` +
-      `<div class="result-line"><span>재료비 (비용)</span><span class="v">−${fmt(costToday)}원</span></div>` +
-      `<div class="result-line big ${profit>=0?'profit':'loss'}"><span>오늘 이익</span><span class="v">${profit>=0?'+':'−'}${fmt(Math.abs(profit))}원</span></div>` +
-      (leftToday>0?`<p style="margin:10px 0 0;color:var(--red);font-weight:800;font-size:12.5px;">😡 ${leftToday}명이 오래 기다리다 떠났어요</p>`:'') +
-      `<p style="margin:12px 0 0;font-weight:850;">현재 내 돈 <strong>${fmt(cash)}원</strong></p>`,
-      day>=TOTAL_DAYS?'결과 보기':'다음 날 ▶',
-      day>=TOTAL_DAYS?endGame:nextDay);
-  }
-  function nextDay(){ day++; startDay(); }
-  function endGame(){
-    state='over';
-    const reached = cash>=GOAL;
-    show(reached?'Success':'Game Over', reached?'🎉 목표 달성!':'아쉬워요!',
-      `5일 동안 손님 <strong>${servedTotal}명</strong>에게 팔아<br><strong>${fmt(cash)}원</strong>을 모았어요!<br>` +
-      (reached?`목표 ${fmt(GOAL)}원을 넘었어요. 멋진 사장님! 👏`
-              :`목표는 ${fmt(GOAL)}원이었어요.<br>재고를 미리 넉넉히 만들면 손님을 더 빨리 받을 수 있어요!`),
-      '다시 하기', fullReset);
+    state='ready'; updateHUD();
+    openOverlay(`
+      <div class="eyebrow">Ready</div>
+      <h2>🍋 레모네이드 사장님</h2>
+      <p>길바닥에서 시작해 <strong>럭셔리 가게</strong>까지 키워보세요!<br><br>
+      ① 손님이 오면 음료를 주고 <strong>거스름돈</strong>을 만들어 줘요.<br>
+      ② 하루가 끝나면 <strong>매출·비용·이익을 직접 계산</strong>해서 적어요.<br>
+      ③ 돈을 모으면 가게가 <strong>업그레이드</strong> 돼요!<br><br>
+      <strong>이익 = 매출 − 비용</strong></p>
+      <button class="btn-main" id="startBtn">장사 시작</button>
+    `);
+    $('startBtn').onclick = startDay;
   }
 
-  // ===== Actions =====
+  function startDay(){
+    closeOverlay();
+    state='playing';
+    customers=[]; fx=[];
+    soldToday=0; revenueTrue=0; costTrue=0; leftToday=0;
+    dayStart=now(); lastTs=now(); lastSpawn=0; spawnGap=spawnGapForLevel();
+    if(!raf) raf=requestAnimationFrame(loop);
+    setHint('손님이 오면 "손님 받기"로 음료를 주고 거스름돈을 만들어 주세요');
+    updateHUD();
+  }
+
+  // ===== Serve → change-making =====
+  function serveFront(){
+    if(state!=='playing') return;
+    const c=customers.find(x=>!x.leaving && !x.done);
+    if(!c){ setHint('손님이 없어요!', true); return; }
+    if(stock<=0){ setHint('재고가 없어요! "만들기"를 누르세요 🍋', true); return; }
+    // Customer pays with a bill >= price; we compute change due for ONE cup at a time
+    const price=L().price;
+    // pick a payment bill conveniently larger than price
+    const bills=[5000,10000];
+    let paid = bills.find(b=>b>=price) || (Math.ceil(price/1000)*1000+1000);
+    if(price<=4500) paid = (Math.random()<0.5?5000:10000);
+    if(paid<price) paid=10000;
+    const due = paid - price;
+    // open change modal (pause game feel — but timer keeps running lightly; we freeze spawns)
+    state='changing';
+    change={ due, tray:[], paid, cust:c, startedAt:now() };
+    renderChange();
+  }
+
+  function renderChange(){
+    const sum = change.tray.reduce((s,v)=>s+v,0);
+    const trayHtml = change.tray.length
+      ? change.tray.map(v=>`<span class="chip">${fmt(v)}</span>`).join('')
+      : `<span class="empty">여기에 거스름돈을 담아요</span>`;
+    const moneyHtml = MONEY.map((m,i)=>`<button class="money-btn ${m.cls}" data-i="${i}">${m.label}원</button>`).join('');
+    const totalCls = sum===change.due?'ok':sum>change.due?'over':'';
+    openOverlay(`
+      <div class="eyebrow">거스름돈 만들기</div>
+      <h2>🥤 음료 ${L().price?fmt(L().price)+'원':''}</h2>
+      <div class="change-info">
+        손님이 <span class="big">${fmt(change.paid)}원</span>을 냈어요.<br>
+        거슬러 줄 돈은 <strong>얼마</strong>일까요?
+      </div>
+      <div class="tray" id="tray">${trayHtml}</div>
+      <div class="change-total">담은 돈: <span class="${totalCls}">${fmt(sum)}원</span></div>
+      <div class="money-grid">${moneyHtml}</div>
+      <button class="btn-main" id="giveBtn">거스름돈 주기</button>
+      <button class="btn-ghost" id="clearBtn">다시 담기</button>
+      <div class="feedback" id="chFeedback"></div>
+    `);
+    card.querySelectorAll('.money-btn').forEach(b=>b.onclick=()=>{ change.tray.push(MONEY[+b.dataset.i].v); renderChange(); });
+    $('giveBtn').onclick=submitChange;
+    $('clearBtn').onclick=()=>{ change.tray=[]; renderChange(); };
+  }
+
+  function submitChange(){
+    const sum=change.tray.reduce((s,v)=>s+v,0);
+    const fb=$('chFeedback');
+    if(sum===change.due){
+      // success — collect money, advance customer
+      const price=L().price;
+      cash += price; revenueTrue += price;
+      const c=change.cust; c.got++;
+      if(c.got>=c.wants){ c.done=true; c.doneAt=now(); soldToday++; }
+      stock--;
+      // tip if served fast
+      if(now()-c.born < c.patience*0.45 && Math.random()<0.35){
+        const tip=Math.round(price*0.2/100)*100; cash+=tip; revenueTrue+=tip;
+        fx.push({type:'text',x:c.x,y:H-200,text:'팁 +'+fmt(tip)+'💛',color:'#D4A843',life:46,vy:-.6});
+      }
+      fx.push({type:'text',x:c.x,y:H-180,text:'정확해요! ✓',color:'#2C7A4D',life:40,vy:-.7});
+      // freeze the day clock for the time spent making change (fairness)
+      dayStart += now() - change.startedAt;
+      closeOverlay();
+      change=null;
+      state='playing'; lastTs=now();
+      updateHUD();
+    } else if(sum>change.due){
+      fb.className='feedback no'; fb.textContent=`너무 많아요! ${fmt(sum-change.due)}원 더 담았어요. 다시 해볼까요?`;
+    } else {
+      fb.className='feedback no'; fb.textContent=`${fmt(change.due-sum)}원이 모자라요. 더 담아보세요!`;
+    }
+  }
+
+  // ===== Make =====
   function makeBatch(){
     if(state!=='playing') return;
-    if(cash < BATCH_COST){ flashHint('돈이 부족해요! 손님을 받아 돈을 버세요.', true); return; }
-    cash -= BATCH_COST; costToday += BATCH_COST; stock += BATCH;
-    fx.push({type:'text', x:W/2, y:H-150, text:'+'+BATCH+'잔 🍋', color:'#2C7A4D', life:42, vy:-.7});
+    const c=L();
+    if(cash < c.cost){ setHint('돈이 부족해요! 손님을 받아 돈을 버세요.', true); return; }
+    cash -= c.cost; costTrue += c.cost; stock += c.batch;
+    fx.push({type:'text',x:W/2,y:H-150,text:'+'+c.batch+'잔 🍋',color:'#2C7A4D',life:44,vy:-.7});
     if(navigator.vibrate) navigator.vibrate(12);
     updateHUD();
   }
-  function serveFront(){
-    if(state!=='playing') return;
-    const c = customers.find(x=>!x.leaving && x.happy===null);
-    if(!c){ flashHint('손님이 없어요!', false); return; }
-    if(stock<=0){ flashHint('재고가 없어요! "만들기"를 누르세요 🍋', true); return; }
-    stock--; c.got++; revenueToday += PRICE; cash += PRICE;
-    fx.push({type:'text', x:c.x, y:queueY(0)-40, text:'+'+fmt(PRICE), color:'#2C7A4D', life:34, vy:-.7});
-    if(c.got>=c.wants){
-      c.happy=true; c.happyAt=now();
-      servedToday++; servedTotal++;
-      // tip chance if served fast
-      const waited = now()-c.born;
-      if(waited < c.patience*0.4 && Math.random()<0.4){
-        const tip=500; cash+=tip; revenueToday+=tip;
-        fx.push({type:'text', x:c.x, y:queueY(0)-64, text:'팁 +'+fmt(tip)+' 💛', color:'#D4A843', life:44, vy:-.6});
-      }
-      if(navigator.vibrate) navigator.vibrate(20);
+
+  // ===== End of day → ledger =====
+  function endDay(){
+    state='ledger';
+    ledger={ step:0, input:'', tries:0 };
+    renderLedger();
+  }
+
+  function renderLedger(){
+    const price=L().price;
+    const steps=[
+      { key:'revenue', title:'오늘 매출(번 돈)은?',
+        formula:`판 잔 수 × 한 잔 가격 = ${soldToday}잔 × ${fmt(price)}원`,
+        // NOTE: revenueTrue includes tips; for the kid's calc we grade on cups×price,
+        // and show tips separately so the math is clean.
+        answer: soldToday*price },
+      { key:'cost', title:'오늘 비용(재료비)은?',
+        formula:`레모네이드 만드는 데 쓴 돈을 모두 더하면?`,
+        answer: costTrue },
+      { key:'profit', title:'오늘 이익은?',
+        formula:`이익 = 매출 − 비용 = ${fmt(soldToday*price)} − ${fmt(costTrue)}`,
+        answer: soldToday*price - costTrue },
+    ];
+    const s=steps[ledger.step];
+    ledger._steps=steps;
+    const tipNote = ledger.step===0 && revenueTrue>soldToday*price
+      ? `<p style="font-size:11.5px;color:var(--gold);margin:6px 0 0;font-weight:800;">💛 받은 팁 ${fmt(revenueTrue-soldToday*price)}원은 따로 계산해요(매출엔 잔 값만!)</p>` : '';
+    openOverlay(`
+      <div class="eyebrow">${day}일차 마감 · ${ledger.step+1}/3</div>
+      <h2>📒 장부 정리</h2>
+      <div class="ledger-q">
+        <div class="qline">${s.title}</div>
+        <div class="formula">${s.formula}</div>
+        ${tipNote}
+      </div>
+      <div class="ledger-input" id="ledInput">${ledger.input?fmt(+ledger.input):'_'}</div>
+      <div class="numpad">
+        ${[7,8,9,4,5,6,1,2,3].map(n=>`<button class="key" data-k="${n}">${n}</button>`).join('')}
+        <button class="key del" data-k="del">⌫</button>
+        <button class="key" data-k="0">0</button>
+        <button class="key action" data-k="ok">확인</button>
+      </div>
+      <div class="feedback" id="ledFeedback"></div>
+    `);
+    card.querySelectorAll('.key').forEach(b=>b.onclick=()=>ledgerKey(b.dataset.k));
+  }
+
+  function ledgerKey(k){
+    const fb=$('ledFeedback');
+    if(k==='del'){ ledger.input=ledger.input.slice(0,-1); }
+    else if(k==='ok'){ return ledgerSubmit(); }
+    else if(ledger.input.length<9){ ledger.input+=k; }
+    fb.textContent='';
+    $('ledInput').textContent = ledger.input?fmt(+ledger.input):'_';
+    $('ledInput').className='ledger-input';
+  }
+
+  function ledgerSubmit(){
+    if(ledger.input==='') return;
+    const s=ledger._steps[ledger.step];
+    const val=parseInt(ledger.input,10);
+    const inp=$('ledInput'), fb=$('ledFeedback');
+    if(val===s.answer){
+      inp.className='ledger-input correct';
+      fb.className='feedback ok'; fb.textContent='정답이에요! 👍';
+      setTimeout(()=>{
+        ledger.step++;
+        if(ledger.step>=3){ finishLedger(); }
+        else { ledger.input=''; renderLedger(); }
+      }, 800);
+    } else {
+      inp.className='ledger-input wrong';
+      fb.className='feedback no';
+      fb.textContent=`맞는 값은 ${fmt(s.answer)}원이에요. 다시 적어볼까요?`;
+      ledger.input='';
     }
+  }
+
+  function finishLedger(){
+    const price=L().price;
+    const profit = soldToday*price - costTrue;
+    lifetimeProfit += profit + (revenueTrue - soldToday*price); // include tips in real money
+    // (cash already reflects everything live)
+    state='result';
+    const nextLv = level<LEVELS.length-1 ? LEVELS[level+1] : null;
+    const canUp = nextLv && cash>=nextLv.need;
+    openOverlay(`
+      <div class="eyebrow">${day}일차 완료</div>
+      <h2>📊 오늘의 성적</h2>
+      <div class="ledger-q" style="text-align:center">
+        <div class="qline">판 음료 <strong>${soldToday}잔</strong>${leftToday>0?` · 😡 떠난 손님 ${leftToday}명`:''}</div>
+        <div class="formula" style="font-size:13px;color:var(--ink)">
+          매출 ${fmt(soldToday*price)}원 − 비용 ${fmt(costTrue)}원 = <strong style="color:${profit>=0?'var(--green)':'var(--red)'}">이익 ${profit>=0?'':'−'}${fmt(Math.abs(profit))}원</strong>
+        </div>
+        <div class="formula" style="margin-top:6px;font-weight:850;color:var(--ink)">현재 내 돈 ${fmt(cash)}원</div>
+      </div>
+      ${canUp
+        ? `<button class="btn-main" id="upBtn" style="background:var(--gold)">⭐ ${nextLv.icon} ${nextLv.name}(으)로 업그레이드!</button><button class="btn-ghost" id="contBtn">다음 날 계속</button>`
+        : (nextLv
+            ? `<p style="font-size:12px;color:var(--sub);font-weight:800;margin-bottom:8px">${nextLv.icon} ${nextLv.name}까지 ${fmt(nextLv.need-cash)}원 더!</p><button class="btn-main" id="contBtn">다음 날 ▶</button>`
+            : `<p style="font-size:12px;color:var(--gold);font-weight:850;margin-bottom:8px">🏆 최고 등급 럭셔리 가게 운영 중!</p><button class="btn-main" id="contBtn">다음 날 ▶</button>`)
+      }
+    `);
+    if(canUp) $('upBtn').onclick=()=>doUpgrade();
+    $('contBtn').onclick=()=>{ day++; startDay(); };
+  }
+
+  function doUpgrade(){
+    level++;
+    state='upgrade';
+    const lv=L();
+    openOverlay(`
+      <div class="eyebrow">Upgrade!</div>
+      <h2>${lv.icon} ${lv.name}</h2>
+      <p>축하해요! 가게가 <strong>${lv.name}</strong>(으)로 커졌어요!<br><br>
+      이제 한 잔에 <strong>${fmt(lv.price)}원</strong>을 받고,<br>
+      한 번에 <strong>${lv.batch}잔</strong>까지 만들 수 있어요.<br>
+      손님도 더 많이 와요!</p>
+      <button class="btn-main" id="upContBtn">다음 날 ▶</button>
+    `);
+    $('upContBtn').onclick=()=>{ day++; startDay(); };
     updateHUD();
   }
 
-  function flashHint(msg, warn){
-    hintBar.textContent = msg;
-    hintBar.style.color = warn ? 'var(--red)' : 'var(--sub)';
-    hintBar.style.fontWeight = warn ? '900' : '700';
-    clearTimeout(flashHint._t);
-    flashHint._t = setTimeout(()=>{
-      hintBar.textContent='맨 앞 손님이 원하는 잔 수만큼 "주기"를 누르세요 · 재고가 없으면 "만들기"';
-      hintBar.style.color='var(--sub)'; hintBar.style.fontWeight='700';
-    }, 1800);
-  }
-
+  // ===== HUD =====
   function updateHUD(){
-    dayEl.textContent = day+'/'+TOTAL_DAYS;
-    cashEl.textContent = fmt(cash);
-    stockEl.textContent = stock;
-    servedEl.textContent = servedToday;
-    batchCost.textContent = fmt(BATCH_COST);
+    const lv=L();
+    shopName.textContent = lv.icon+' '+(level===0?'길바닥 레모네이드':lv.name+' 레모네이드');
+    dayEl.textContent=day; cashEl.textContent=fmt(cash); stockEl.textContent=stock; lvEl.textContent=lv.name;
+    batchCost.textContent=fmt(lv.cost);
+    makeBtn.querySelector('.sub').innerHTML=lv.batch+'잔 / '+fmt(lv.cost)+'원';
   }
-
-  // ===== Layout =====
-  function queueY(slot){ return H - 120 - slot*0; } // single front position emphasis
-  // We render a horizontal-ish queue near bottom; front customer is biggest.
+  function setHint(msg,warn){
+    hintBar.textContent=msg;
+    hintBar.style.color=warn?'var(--red)':'var(--sub)';
+    hintBar.style.fontWeight=warn?'900':'700';
+    if(warn){ clearTimeout(setHint._t); setHint._t=setTimeout(()=>setHint('손님이 오면 "손님 받기"로 음료를 주고 거스름돈을 만들어 주세요'),1800); }
+  }
 
   // ===== Loop =====
   function loop(ts){
-    const dt = Math.min(50, ts-lastTs||16.67); lastTs=ts;
-    if(state==='playing') update(ts, dt);
+    const dt=Math.min(50, ts-lastTs||16.67); lastTs=ts;
+    if(state==='playing') update(ts,dt);
     draw(ts);
     raf=requestAnimationFrame(loop);
   }
-
-  function update(ts, dt){
-    const f = dt/16.67;
-    const elapsed = (ts-dayStart)/1000;
-
-    // spawn customers
-    const activeCount = customers.filter(c=>!c.leaving && c.happy===null).length;
-    if(ts-lastSpawn > spawnGap && activeCount < 5 && elapsed < DAY_SECONDS){
-      customers.push(makeCustomer());
-      lastSpawn = ts;
-      spawnGap = spawnGapForDay();
+  function update(ts,dt){
+    const f=dt/16.67;
+    const elapsed=(ts-dayStart)/1000;
+    const active=customers.filter(c=>!c.leaving&&!c.done).length;
+    const maxQ = 3+level;
+    if(ts-lastSpawn>spawnGap && active<Math.min(6,maxQ) && elapsed<DAY_SECONDS){
+      customers.push(makeCustomer()); lastSpawn=ts; spawnGap=spawnGapForLevel();
     }
-
-    // update customers
     let slot=0;
     for(const c of customers){
-      c.bob += 0.05*f;
-      if(c.happy===null && !c.leaving){
-        // assign queue slot (front = 0)
-        c.targetSlot = slot++;
-        // patience countdown only for those near front (waiting actively)
-        if(ts - c.born > c.patience){
-          c.leaving=true; c.leaveAt=ts; c.happy=false;
-          leftToday++;
-          fx.push({type:'text', x:c.x, y:queueY(0)-40, text:'😡 떠남', color:'#D34234', life:40, vy:-.6});
-        }
+      c.bob+=0.05*f;
+      if(!c.done&&!c.leaving){
+        c.slot=slot++;
+        if(ts-c.born>c.patience){ c.leaving=true; c.leaveAt=ts; leftToday++;
+          fx.push({type:'text',x:c.x,y:H-180,text:'😡 떠남',color:'#D34234',life:40,vy:-.6}); }
       }
-      // smooth x toward slot target position
-      const tx = frontX(c.targetSlot);
-      c.x += (tx - c.x)*0.12*f;
+      const tx=70+c.slot*64; c.x+=(tx-c.x)*0.12*f;
     }
-
-    // remove served/left after a beat
-    customers = customers.filter(c=>{
-      if(c.happy===true && now()-c.happyAt>500) return false;
-      if(c.leaving && ts-c.leaveAt>500) return false;
+    customers=customers.filter(c=>{
+      if(c.done&&now()-c.doneAt>500) return false;
+      if(c.leaving&&ts-c.leaveAt>500) return false;
       return true;
     });
-
-    // fx
-    for(const p of fx){ p.life-=f; if(p.type==='text') p.y+=p.vy*f; }
-    fx = fx.filter(p=>p.life>0);
-
-    // end day when time up and queue cleared of active waiters
-    if(elapsed >= DAY_SECONDS){
-      hintBar.textContent='마감 시간! 남은 손님을 받고 정리하는 중…';
-      const stillWaiting = customers.some(c=>c.happy===null && !c.leaving);
-      if(!stillWaiting) endDay();
+    for(const p of fx){ p.life-=f; if(p.type==='text')p.y+=p.vy*f; }
+    fx=fx.filter(p=>p.life>0);
+    if(elapsed>=DAY_SECONDS){
+      setHint('마감! 남은 손님 정리 중…');
+      if(!customers.some(c=>!c.done&&!c.leaving)) endDay();
     }
     updateHUD();
-  }
-
-  function frontX(slot){
-    // queue lined up from left, front customer at center-left near counter
-    return 70 + slot*68;
   }
 
   // ===== Draw =====
   function clearBacking(){ ctx.save(); ctx.setTransform(1,0,0,1,0,0); ctx.clearRect(0,0,canvas.width,canvas.height); ctx.restore(); }
   function draw(ts){
     clearBacking();
-    // sky/ground gradient is on the wrap CSS; draw scene elements
-    drawScene();
-    // customers (draw back-to-front: higher slot behind)
-    const sorted = customers.slice().sort((a,b)=>b.targetSlot-a.targetSlot);
-    for(const c of sorted) drawCustomer(c, ts);
-    drawStand();
-    // fx
-    for(const p of fx){
-      if(p.type==='text'){
-        const a=Math.max(0,Math.min(1,p.life/42));
-        ctx.globalAlpha=a; ctx.fillStyle=p.color;
-        ctx.font='950 16px system-ui'; ctx.textAlign='center'; ctx.textBaseline='middle';
-        ctx.lineWidth=3.5; ctx.strokeStyle='#fff'; ctx.strokeText(p.text,p.x,p.y); ctx.fillText(p.text,p.x,p.y);
-        ctx.globalAlpha=1;
-      }
-    }
-    // day timer bar
-    if(state==='playing'){
-      const elapsed=(ts-dayStart)/1000;
-      const ratio=Math.max(0,1-elapsed/DAY_SECONDS);
-      ctx.fillStyle='rgba(10,10,10,.12)'; ctx.fillRect(12,12,W-24,8);
-      ctx.fillStyle='#D4A843'; ctx.fillRect(12,12,(W-24)*ratio,8);
-      ctx.fillStyle='#0A0A0A'; ctx.font='900 12px system-ui'; ctx.textAlign='right'; ctx.textBaseline='top';
-      ctx.fillText('남은 시간 '+Math.ceil(Math.max(0,DAY_SECONDS-elapsed))+'초', W-14, 24);
+    const lv=L();
+    // sky
+    const g=ctx.createLinearGradient(0,0,0,H);
+    g.addColorStop(0,lv.sky[0]); g.addColorStop(0.62,lv.sky[1]); g.addColorStop(0.62,lv.ground); g.addColorStop(1,lv.ground);
+    ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+    // sun or lights
+    if(level<5){ ctx.fillStyle='#F2C94C'; ctx.beginPath(); ctx.arc(W-54,60,24,0,7); ctx.fill();
+      ctx.fillStyle='rgba(242,201,76,.3)'; ctx.beginPath(); ctx.arc(W-54,60,34,0,7); ctx.fill(); }
+    else { for(let i=0;i<8;i++){ ctx.fillStyle=i%2?'#F2C94C':'#E8A0BF'; ctx.beginPath(); ctx.arc(30+i*52,40,4,0,7); ctx.fill(); } }
+    // customers back-to-front
+    const sorted=customers.slice().sort((a,b)=>b.slot-a.slot);
+    for(const c of sorted) drawCustomer(c,ts);
+    drawStand(lv);
+    for(const p of fx){ if(p.type==='text'){ const a=Math.max(0,Math.min(1,p.life/44));
+      ctx.globalAlpha=a; ctx.fillStyle=p.color; ctx.font='950 16px system-ui'; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.lineWidth=3.5; ctx.strokeStyle='#fff'; ctx.strokeText(p.text,p.x,p.y); ctx.fillText(p.text,p.x,p.y); ctx.globalAlpha=1; } }
+    if(state==='playing'||state==='changing'){
+      const elapsed=(now()-dayStart)/1000; const ratio=Math.max(0,1-elapsed/DAY_SECONDS);
+      ctx.fillStyle='rgba(10,10,10,.12)'; ctx.fillRect(12,12,W-24,7);
+      ctx.fillStyle='#D4A843'; ctx.fillRect(12,12,(W-24)*ratio,7);
+      ctx.fillStyle=level>=5?'#fff':'#0A0A0A'; ctx.font='900 11px system-ui'; ctx.textAlign='right'; ctx.textBaseline='top';
+      ctx.fillText('⏱ '+Math.ceil(Math.max(0,DAY_SECONDS-elapsed))+'초', W-14, 22);
     }
   }
-
-  function drawScene(){
-    // sun
-    ctx.fillStyle='#F2C94C'; ctx.beginPath(); ctx.arc(W-58, 70, 26, 0, Math.PI*2); ctx.fill();
-    ctx.fillStyle='rgba(242,201,76,.35)'; ctx.beginPath(); ctx.arc(W-58, 70, 36, 0, Math.PI*2); ctx.fill();
-  }
-
-  function drawCustomer(c, ts){
-    const baseY = H - 150;
-    const bob = Math.sin(c.bob)*2;
-    const x=c.x, y=baseY+bob;
-    const front = c.targetSlot===0;
-    const scale = front?1.0:0.82;
-    ctx.save();
-    ctx.translate(x,y); ctx.scale(scale,scale);
-    // body
-    ctx.fillStyle = c.leaving? '#9aa0a6' : c.color;
-    ctx.beginPath(); ctx.roundRect(-15, 6, 30, 34, 8); ctx.fill();
-    // head
-    ctx.fillStyle = c.leaving? '#b8bcc0' : '#F2D5B8';
-    ctx.beginPath(); ctx.arc(0,-8,14,0,Math.PI*2); ctx.fill();
-    // face
-    if(c.happy===true){
-      ctx.strokeStyle='#0A0A0A'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(0,-6,6,0.1*Math.PI,0.9*Math.PI); ctx.stroke();
-      ctx.fillStyle='#0A0A0A'; ctx.beginPath(); ctx.arc(-5,-11,1.6,0,7); ctx.arc(5,-11,1.6,0,7); ctx.fill();
-    } else if(c.leaving){
-      ctx.strokeStyle='#D34234'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(0,-4,5,1.1*Math.PI,1.9*Math.PI); ctx.stroke();
-    } else {
-      ctx.fillStyle='#0A0A0A'; ctx.beginPath(); ctx.arc(-5,-10,1.8,0,7); ctx.arc(5,-10,1.8,0,7); ctx.fill();
-      ctx.strokeStyle='#0A0A0A'; ctx.lineWidth=1.8; ctx.beginPath(); ctx.moveTo(-4,-3); ctx.lineTo(4,-3); ctx.stroke();
-    }
+  function drawCustomer(c,ts){
+    const baseY=H-210, bob=Math.sin(c.bob)*2, x=c.x, y=baseY+bob;
+    const scale=c.slot===0?1:0.84;
+    ctx.save(); ctx.translate(x,y); ctx.scale(scale,scale);
+    ctx.fillStyle=c.leaving?'#9aa0a6':c.color; ctx.beginPath(); ctx.roundRect(-15,6,30,34,8); ctx.fill();
+    ctx.fillStyle=c.leaving?'#b8bcc0':'#F2D5B8'; ctx.beginPath(); ctx.arc(0,-8,14,0,7); ctx.fill();
+    if(c.done){ ctx.strokeStyle='#0A0A0A'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(0,-6,6,0.1*Math.PI,0.9*Math.PI); ctx.stroke();
+      ctx.fillStyle='#0A0A0A'; ctx.beginPath(); ctx.arc(-5,-11,1.6,0,7); ctx.arc(5,-11,1.6,0,7); ctx.fill(); }
+    else if(c.leaving){ ctx.strokeStyle='#D34234'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(0,-4,5,1.1*Math.PI,1.9*Math.PI); ctx.stroke(); }
+    else { ctx.fillStyle='#0A0A0A'; ctx.beginPath(); ctx.arc(-5,-10,1.8,0,7); ctx.arc(5,-10,1.8,0,7); ctx.fill();
+      ctx.strokeStyle='#0A0A0A'; ctx.lineWidth=1.6; ctx.beginPath(); ctx.moveTo(-4,-3); ctx.lineTo(4,-3); ctx.stroke(); }
     ctx.restore();
-
-    // speech bubble with wanted cups (only for waiting customers)
-    if(c.happy===null && !c.leaving){
-      const bx=x, by=y-46;
-      const remaining = c.wants - c.got;
+    if(!c.done&&!c.leaving){
+      const bx=x, by=y-46, remaining=c.wants-c.got;
       ctx.fillStyle='#fff'; ctx.strokeStyle='#0A0A0A'; ctx.lineWidth=2;
-      ctx.beginPath(); ctx.roundRect(bx-26, by-18, 52, 30, 9); ctx.fill(); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(bx-5,by+11); ctx.lineTo(bx+5,by+11); ctx.lineTo(bx,by+19); ctx.closePath(); ctx.fill(); ctx.stroke();
-      ctx.fillStyle='#0A0A0A'; ctx.font='950 17px system-ui'; ctx.textAlign='center'; ctx.textBaseline='middle';
-      ctx.fillText('🥤'+remaining, bx, by-3);
-      // patience bar
-      const pr = Math.max(0, 1-(now()-c.born)/c.patience);
-      ctx.fillStyle='rgba(10,10,10,.15)'; ctx.fillRect(bx-22, by+14, 44, 4);
-      ctx.fillStyle = pr>0.5?'#2C7A4D':pr>0.25?'#D4A843':'#D34234';
-      ctx.fillRect(bx-22, by+14, 44*pr, 4);
+      ctx.beginPath(); ctx.roundRect(bx-24,by-17,48,28,9); ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(bx-5,by+10); ctx.lineTo(bx+5,by+10); ctx.lineTo(bx,by+18); ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.fillStyle='#0A0A0A'; ctx.font='950 16px system-ui'; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText('🥤'+remaining,bx,by-3);
+      const pr=Math.max(0,1-(now()-c.born)/c.patience);
+      ctx.fillStyle='rgba(10,10,10,.15)'; ctx.fillRect(bx-20,by+13,40,4);
+      ctx.fillStyle=pr>0.5?'#2C7A4D':pr>0.25?'#D4A843':'#D34234'; ctx.fillRect(bx-20,by+13,40*pr,4);
     }
   }
-
-  function drawStand(){
-    // counter at bottom
-    const cy=H-78;
-    ctx.fillStyle='#C9824B'; ctx.fillRect(0,cy,W,78);
+  function drawStand(lv){
+    const cy=H-150;
+    ctx.fillStyle='#C9824B'; ctx.fillRect(0,cy,W,150);
     ctx.fillStyle='#A86534'; ctx.fillRect(0,cy,W,8);
-    // stand sign
     ctx.fillStyle='#FFF8E6'; ctx.strokeStyle='#A86534'; ctx.lineWidth=3;
-    ctx.beginPath(); ctx.roundRect(W/2-70, cy+16, 140, 44, 10); ctx.fill(); ctx.stroke();
-    ctx.fillStyle='#D4A843'; ctx.font='950 17px system-ui'; ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.fillText('🍋 LEMONADE', W/2, cy+30);
-    ctx.fillStyle='#0A0A0A'; ctx.font='900 14px system-ui';
-    ctx.fillText('한 잔 '+fmt(PRICE)+'원', W/2, cy+48);
-    // stock cups on counter (up to 8 shown)
-    const showN=Math.min(8, stock);
-    for(let i=0;i<showN;i++){
-      const cx=18+i*20;
-      ctx.fillStyle='#F2C94C'; ctx.beginPath(); ctx.roundRect(cx, cy-20, 14, 18, 3); ctx.fill();
-      ctx.fillStyle='#fff'; ctx.fillRect(cx+2, cy-20, 10, 3);
-    }
-    if(stock>8){ ctx.fillStyle='#0A0A0A'; ctx.font='900 12px system-ui'; ctx.textAlign='left'; ctx.fillText('+'+(stock-8), 18+8*20, cy-12); }
+    ctx.beginPath(); ctx.roundRect(W/2-78,cy+16,156,46,10); ctx.fill(); ctx.stroke();
+    ctx.fillStyle='#D4A843'; ctx.font='950 16px system-ui'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(lv.icon+' '+lv.name,W/2,cy+31);
+    ctx.fillStyle='#0A0A0A'; ctx.font='900 13px system-ui';
+    ctx.fillText('한 잔 '+fmt(lv.price)+'원',W/2,cy+49);
+    const showN=Math.min(9,stock);
+    for(let i=0;i<showN;i++){ const cx=16+i*19; ctx.fillStyle='#F2C94C'; ctx.beginPath(); ctx.roundRect(cx,cy-19,13,17,3); ctx.fill();
+      ctx.fillStyle='#fff'; ctx.fillRect(cx+2,cy-19,9,3); }
+    if(stock>9){ ctx.fillStyle='#0A0A0A'; ctx.font='900 12px system-ui'; ctx.textAlign='left'; ctx.fillText('+'+(stock-9),16+9*19,cy-11); }
   }
 
   // ===== Input =====
   function sizeCanvas(){
-    const r=wrap.getBoundingClientRect();
-    const dpr=Math.max(1,window.devicePixelRatio||1);
-    const scale=Math.min(r.width/W, r.height/H);
+    const r=stage.getBoundingClientRect(); const dpr=Math.max(1,window.devicePixelRatio||1);
+    const scale=Math.min(r.width/W,r.height/H);
     canvas.width=Math.round(r.width*dpr); canvas.height=Math.round(r.height*dpr);
     ctx.setTransform(dpr*scale,0,0,dpr*scale,(r.width-W*scale)*dpr/2,(r.height-H*scale)*dpr/2);
   }
   window.addEventListener('resize', sizeCanvas);
-
-  // Tapping a waiting customer also serves them (intuitive)
-  function wrapTap(e){
-    if(state!=='playing') return;
-    serveFront();
-    if(e.cancelable) e.preventDefault();
-  }
-  wrap.addEventListener('pointerdown', wrapTap);
-
+  stage.addEventListener('pointerdown', e=>{ if(state==='playing'){ serveFront(); if(e.cancelable)e.preventDefault(); } });
   makeBtn.addEventListener('click', makeBatch);
   serveBtn.addEventListener('click', serveFront);
-  window.addEventListener('keydown', e=>{
-    if(e.key==='m'||e.key==='M'){ makeBatch(); }
-    if(e.key===' '||e.key==='Enter'){ if(state==='ready'){startDay();e.preventDefault();} else serveFront(); }
-  });
 
   // ===== Boot =====
   sizeCanvas();
