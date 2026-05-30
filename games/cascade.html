@@ -1,607 +1,607 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 <title>Cascade · 캐스케이드</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=Noto+Serif+KR:wght@400;500&display=swap" rel="stylesheet">
 <style>
-  :root {
-    --bg: #F5F1EA; --bg-elev: #FBF8F2; --ink: #1B365D; --ink-soft: #5A6B82;
-    --line: #D4CCBC; --gold: #B8935A; --gold-deep: #8A6A38;
-    --good: #2C7A4D; --bad: #C0392B; --mult: #B8935A;
-    --field: #F0E6D0;
+  :root{
+    --bg:#FDF8EE;
+    --panel:#FFFFFF;
+    --ink:#0A0A0A;
+    --sub:#666666;
+    --line:#E8E0D2;
+    --gold:#D4A843;
+    --blue:#1F6FEB;
+    --red:#D34234;
+    --green:#2C7A4D;
+    --cream:#F7EEDB;
   }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  html, body { height: 100%; }
-  body {
-    font-family: "EB Garamond", "Noto Serif KR", Georgia, serif;
-    background: var(--bg);
-    background-image: radial-gradient(circle at 20% 10%, rgba(184,147,90,0.06), transparent 40%), radial-gradient(circle at 80% 90%, rgba(27,54,93,0.05), transparent 40%);
-    color: var(--ink); min-height: 100vh; display: flex; align-items: center; justify-content: center;
-    padding: 18px 12px; -webkit-font-smoothing: antialiased; -webkit-tap-highlight-color: transparent; touch-action: manipulation;
-  }
-  .frame { width: 100%; max-width: 400px; }
-  .header { text-align: center; margin-bottom: 12px; }
-  .eyebrow { font-size: 0.7rem; letter-spacing: 0.35em; text-transform: uppercase; color: var(--ink-soft); margin-bottom: 6px; }
-  .title { font-family: "EB Garamond", serif; font-style: italic; font-weight: 500; font-size: 2.2rem; line-height: 1; }
-  .title::after { content: ""; display: block; width: 32px; height: 1px; background: var(--gold); margin: 12px auto 0; }
-
-  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--line); border: 1px solid var(--line); margin-bottom: 8px; }
-  .stat-cell { background: var(--bg-elev); padding: 8px 3px; text-align: center; }
-  .stat-label { font-size: 0.58rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--ink-soft); margin-bottom: 2px; }
-  .stat-value { font-family: "EB Garamond", serif; font-size: 1.05rem; font-weight: 500; font-variant-numeric: tabular-nums; }
-  .stat-cell.best .stat-value { color: var(--gold); font-style: italic; }
-  .stat-cell.army .stat-value { color: var(--ink); }
-  .stat-cell.hp .stat-value { color: var(--bad); }
-  .stat-cell.time .stat-value { color: var(--gold-deep); }
-
-  .status { text-align: center; font-size: 0.88rem; font-style: italic; color: var(--ink-soft); min-height: 22px; margin: 6px 0; letter-spacing: 0.02em; }
-  .status.go { color: var(--gold); font-style: normal; letter-spacing: 0.06em; }
-  .status.win { color: var(--good); font-style: normal; font-weight: 500; letter-spacing: 0.1em; }
-  .status.lose { color: var(--bad); font-style: normal; font-weight: 500; letter-spacing: 0.1em; }
-
-  .board-wrap { position: relative; aspect-ratio: 3 / 5; background: var(--field); border: 1px solid var(--ink); box-shadow: 0 6px 18px rgba(60,40,20,0.18); margin-bottom: 12px; overflow: hidden; user-select: none; -webkit-user-select: none; touch-action: none; cursor: pointer; }
-  canvas { display: block; width: 100%; height: 100%; }
-
-  .overlay { position: absolute; inset: 0; background: rgba(27,54,93,0.82); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); display: none; align-items: center; justify-content: center; padding: 18px; z-index: 5; animation: fadeIn 0.3s ease; }
-  .overlay.show { display: flex; }
-  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-  .overlay-card { background: var(--bg-elev); border: 1px solid var(--gold); padding: 22px 18px; text-align: center; max-width: 300px; width: 100%; position: relative; }
-  .overlay-card::before, .overlay-card::after { content: ""; position: absolute; width: 16px; height: 16px; border: 1px solid var(--gold); }
-  .overlay-card::before { top: -1px; left: -1px; border-right: none; border-bottom: none; }
-  .overlay-card::after { bottom: -1px; right: -1px; border-left: none; border-top: none; }
-  .overlay-eyebrow { font-size: 0.62rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--ink-soft); margin-bottom: 7px; }
-  .overlay-title { font-family: "EB Garamond", serif; font-style: italic; font-size: 1.45rem; color: var(--gold); margin-bottom: 12px; line-height: 1.2; }
-  .overlay.lose .overlay-title { color: var(--bad); font-style: normal; }
-  .overlay.win .overlay-title { color: var(--good); font-style: normal; }
-  .overlay-stat { font-size: 0.85rem; color: var(--ink-soft); margin-bottom: 14px; line-height: 1.6; }
-  .overlay-stat strong { font-family: "EB Garamond", serif; font-weight: 500; color: var(--ink); font-size: 1.05rem; }
-  .overlay-btn { width: 100%; padding: 11px; border: 1px solid var(--ink); background: var(--ink); color: var(--bg-elev); font-family: inherit; font-size: 0.82rem; letter-spacing: 0.15em; text-transform: uppercase; cursor: pointer; }
-  .overlay-btn:hover { background: var(--gold); border-color: var(--gold); }
-
-  .controls-meta { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 10px; }
-  .btn { padding: 11px; background: transparent; border: 1px solid var(--ink); color: var(--ink); font-family: inherit; font-size: 0.82rem; letter-spacing: 0.15em; text-transform: uppercase; cursor: pointer; transition: all 0.2s ease; }
-  .btn:hover, .btn:active { background: var(--ink); color: var(--bg-elev); }
-  .btn.subtle { border-color: var(--line); color: var(--ink-soft); }
-  .btn.subtle:hover { background: var(--ink-soft); color: var(--bg-elev); }
-  .hint { text-align: center; font-size: 0.7rem; color: var(--ink-soft); letter-spacing: 0.04em; line-height: 1.6; }
-  .footer { text-align: center; margin-top: 14px; font-size: 0.7rem; letter-spacing: 0.15em; color: var(--ink-soft); text-transform: uppercase; }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;overflow:hidden;background:var(--bg);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans KR",sans-serif;color:var(--ink);}
+  body{display:flex;align-items:center;justify-content:center;padding:12px;-webkit-tap-highlight-color:transparent;touch-action:none;}
+  .app{width:min(100%,440px);height:min(100vh,820px);display:flex;flex-direction:column;gap:8px;}
+  .top{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:12px 14px;box-shadow:0 8px 24px rgba(10,10,10,.08)}
+  .brand{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+  .brand h1{font-size:22px;letter-spacing:-.05em;font-weight:950;line-height:1.05}
+  .brand .tag{font-size:11px;color:var(--sub);font-weight:900;letter-spacing:.12em;text-transform:uppercase;white-space:nowrap}
+  .stats{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+  .stat{background:var(--cream);border:1px solid var(--line);border-radius:12px;padding:7px 4px;text-align:center;min-width:0}
+  .stat .label{font-size:10px;color:var(--sub);font-weight:850;letter-spacing:-.03em;white-space:nowrap}
+  .stat .value{font-size:18px;font-weight:950;letter-spacing:-.04em;font-variant-numeric:tabular-nums;margin-top:1px}
+  .stat.hp .value{color:var(--red)}
+  .stat.mob .value{color:var(--blue)}
+  .stat.time .value{color:var(--gold)}
+  .game-wrap{position:relative;flex:1;min-height:0;background:var(--panel);border:1px solid var(--ink);border-radius:22px;overflow:hidden;box-shadow:0 12px 32px rgba(10,10,10,.16);touch-action:none;user-select:none}
+  canvas{display:block;width:100%;height:100%;}
+  .overlay{position:absolute;inset:0;background:rgba(10,10,10,.76);display:flex;align-items:center;justify-content:center;padding:20px;z-index:10}
+  .overlay.hidden{display:none}
+  .card{width:min(100%,335px);background:var(--panel);border-radius:22px;border:2px solid var(--gold);padding:22px 18px;text-align:center;box-shadow:0 18px 44px rgba(0,0,0,.28)}
+  .eyebrow{font-size:12px;font-weight:950;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin-bottom:8px}
+  .card h2{font-size:28px;letter-spacing:-.06em;line-height:1.05;margin-bottom:10px}
+  .card p{font-size:14px;line-height:1.6;color:var(--sub);font-weight:650;margin-bottom:16px}
+  .card strong{color:var(--ink);font-weight:950}
+  .btn-main{appearance:none;border:0;border-radius:14px;background:var(--ink);color:#fff;padding:13px 16px;width:100%;font-weight:950;font-size:15px;letter-spacing:-.02em;cursor:pointer}
+  .btn-main:active{transform:translateY(1px)}
+  .controls{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+  .btn{appearance:none;border:1px solid var(--ink);background:var(--panel);border-radius:14px;padding:12px 8px;font-size:13px;font-weight:900;color:var(--ink);cursor:pointer}
+  .btn:active{background:var(--ink);color:#fff}
+  .hint{font-size:12px;line-height:1.45;color:var(--sub);text-align:center;font-weight:650;padding:0 10px 4px}
+  .footer{text-align:center;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--sub);font-weight:850;padding-top:2px}
 </style>
 </head>
 <body>
-  <div class="frame">
-    <header class="header">
-      <div class="eyebrow">Game · No. 15</div>
-      <h1 class="title">Cascade</h1>
-    </header>
-
-    <div class="stats">
-      <div class="stat-cell"><div class="stat-label">Stage</div><div class="stat-value" id="stageEl">1</div></div>
-      <div class="stat-cell army"><div class="stat-label">군대</div><div class="stat-value" id="armyEl">0</div></div>
-      <div class="stat-cell hp"><div class="stat-label">적 HP</div><div class="stat-value" id="hpEl">0</div></div>
-      <div class="stat-cell time"><div class="stat-label">시간</div><div class="stat-value" id="timeEl">60</div></div>
+<div class="app">
+  <section class="top">
+    <div class="brand">
+      <h1>Cascade · 캐스케이드</h1>
+      <div class="tag">Game · No. 15</div>
     </div>
+    <div class="stats">
+      <div class="stat"><div class="label">STAGE</div><div class="value" id="stageEl">1</div></div>
+      <div class="stat mob"><div class="label">MOBS</div><div class="value" id="mobEl">0</div></div>
+      <div class="stat hp"><div class="label">BASE</div><div class="value" id="hpEl">0</div></div>
+      <div class="stat"><div class="label">POWER</div><div class="value" id="powEl">1</div></div>
+      <div class="stat time"><div class="label">TIME</div><div class="value" id="timeEl">75</div></div>
+    </div>
+  </section>
 
-    <div class="status" id="status">시작 버튼을 누르세요</div>
-
-    <div class="board-wrap" id="boardWrap">
-      <canvas id="canvas"></canvas>
-      <div class="overlay show" id="overlay">
-        <div class="overlay-card">
-          <div class="overlay-eyebrow" id="ovEyebrow">Ready</div>
-          <div class="overlay-title" id="ovTitle">캐스케이드</div>
-          <div class="overlay-stat" id="ovStat">화면을 좌우로 드래그해 대포를 움직이세요.<br>
-            대포에서 군인이 자동으로 발사됩니다.<br>
-            <strong style="color:var(--mult)">×2 · ×3</strong> 게이트로 군대를 폭발적으로 늘려<br>
-            끝의 빨간 기지를 60초 안에 격파하세요!</div>
-          <button class="overlay-btn" id="ovBtn">시작</button>
-        </div>
+  <main class="game-wrap" id="gameWrap">
+    <canvas id="game"></canvas>
+    <div class="overlay" id="overlay">
+      <div class="card">
+        <div class="eyebrow" id="ovEyebrow">READY</div>
+        <h2 id="ovTitle">대포를 움직여<br>게이트를 맞춰라</h2>
+        <p id="ovBody">
+          대포는 <strong>하단에서 좌우 이동</strong>합니다.<br>
+          병사는 위로 자동 발사되고, <strong>게이트는 일정 시간 후 사라진 뒤 다른 위치에 재생성</strong>됩니다.<br>
+          좋은 게이트가 나왔을 때 빠르게 위치를 잡는 것이 핵심입니다.
+        </p>
+        <button class="btn-main" id="ovBtn">시작</button>
       </div>
     </div>
+  </main>
 
-    <div class="controls-meta">
-      <button class="btn" id="newGameBtn">새 게임</button>
-      <button class="btn subtle" id="pauseBtn">일시정지</button>
-    </div>
-    <div class="hint">화면을 좌우로 드래그 (PC는 ←→ 키) · 좋은 게이트로 조준 · 적 군대와 부딪히면 양쪽 모두 소멸</div>
-    <div class="footer">— Min1 Park · 2026 —</div>
+  <div class="controls">
+    <button class="btn" id="restartBtn">처음부터</button>
+    <button class="btn" id="pauseBtn">일시정지</button>
+    <button class="btn" id="upgradeBtn">강화 +</button>
   </div>
+  <div class="hint">드래그 = 대포 좌우 이동 · PC는 ←/→ 또는 A/D · P = 일시정지<br>게이트는 고정되어 있지 않고 <b>생성 → 유지 → 사라짐 → 위치 변경</b>을 반복합니다.</div>
+  <div class="footer">— Min1 Park · 2026 —</div>
+</div>
 
 <script>
-  // ===== Refs =====
-  const canvas = document.getElementById('canvas');
+(() => {
+  const canvas = document.getElementById('game');
   const ctx = canvas.getContext('2d');
-  const boardWrap = document.getElementById('boardWrap');
+  const wrap = document.getElementById('gameWrap');
   const stageEl = document.getElementById('stageEl');
-  const armyEl = document.getElementById('armyEl');
+  const mobEl = document.getElementById('mobEl');
   const hpEl = document.getElementById('hpEl');
+  const powEl = document.getElementById('powEl');
   const timeEl = document.getElementById('timeEl');
-  const statusEl = document.getElementById('status');
   const overlay = document.getElementById('overlay');
   const ovEyebrow = document.getElementById('ovEyebrow');
   const ovTitle = document.getElementById('ovTitle');
-  const ovStat = document.getElementById('ovStat');
+  const ovBody = document.getElementById('ovBody');
   const ovBtn = document.getElementById('ovBtn');
-  const newGameBtn = document.getElementById('newGameBtn');
+  const restartBtn = document.getElementById('restartBtn');
   const pauseBtn = document.getElementById('pauseBtn');
+  const upgradeBtn = document.getElementById('upgradeBtn');
 
-  // ===== Config =====
-  const W = 360, H = 600;
-  const SPAWNER_Y = 552;
-  const ENEMY_Y = 30, ENEMY_H = 56;
-  const BLUE_SPEED = 5.5;
-  const RED_SPEED = 4.0;
-  const BLUE_SPAWN_MS = 32;       // ~31 spawns/sec for a thick stream
-  const STICK_R = 3.2;
-  const MAX_STICK = 600;          // big crowd cap
-  const TIME_LIMIT = 60;          // seconds
-  const GATE_ROWS_Y = [180, 290, 400];
-  const LANES = 3;
-  const LANE_W = (W - 6) / LANES; // 6px gaps total
-  const CLASH_DIST = 9;
+  const W = 420, H = 680;
+  const ROAD_L = 34, ROAD_R = W - 34;
+  const CANNON_Y = H - 56;
+  const LIMIT = 75;
+  const MAX_MOBS = 420;
+  const BASE_Y = 20;
+  const BASE_H = 58;
 
-  // ===== Colors =====
-  const COL = {
-    field: '#F0E6D0', fieldDark: '#E0D2B0',
-    bg: '#F5F1EA',
-    spawner: '#1B365D', spawnerEdge: '#0C1F3D',
-    blue: '#1B365D', blueLight: '#3D5A85',
-    red: '#C0392B', redDark: '#8A2A1F',
-    enemy: '#7C2418', enemyEdge: '#4A0F08',
-    good: '#2C7A4D', bad: '#C0392B', mult: '#B8935A',
-    text: '#FBF8F2', ink: '#1B365D',
-    line: 'rgba(120,100,70,0.10)',
+  const COLORS = {
+    bg:'#FDF8EE', road:'#EFE3CC', wall:'#B8AA90', wallDark:'#8D7F66', lane:'rgba(10,10,10,.07)',
+    ink:'#0A0A0A', white:'#FFFFFF', gold:'#D4A843', blue:'#1F6FEB', blue2:'#0F4EB3',
+    red:'#D34234', red2:'#9D251B', green:'#2C7A4D', green2:'#1E5B38', bad:'#D34234', shadow:'rgba(10,10,10,.16)'
   };
 
-  // ===== State =====
-  let stage = 1;
-  let best = loadBest();
-  let player = { x: W / 2 };
-  let blues = [];
-  let reds = [];
-  let gates = [];   // {x, y, w, h, effect, deactivated}
-  let particles = [];
-  let enemy = { hp: 0, maxHp: 0, redSpawnMs: 200, redLastSpawn: 0 };
-  let stageStartMs = 0;
   let state = 'ready';
-  let lastTs = 0, lastBlueSpawn = 0;
-  let rafId = null;
+  let stage = 1;
+  let power = 1;
+  let fireRate = 82;
+  let mobSpeed = 5.1;
+  let cannon = { x: W/2, targetX: W/2, vx: 0 };
+  let mobs = [];
+  let enemies = [];
+  let gates = [];
+  let gateSeq = 1;
+  let fx = [];
+  let base = { hp: 520, max: 520 };
+  let startAt = 0;
+  let pausedAt = 0;
+  let lastTs = 0;
+  let lastFire = 0;
+  let lastEnemy = 0;
+  let raf = null;
+  let left = false, right = false;
 
-  function loadBest(){ try { return parseInt(localStorage.getItem('gcascade-best')||'1')||1; } catch(e){ return 1; } }
-  function saveBest(v){ try { localStorage.setItem('gcascade-best', String(v)); } catch(e){} }
+  const gateSlots = [
+    { band:[448,522], next:0 },
+    { band:[302,386], next:0 },
+    { band:[168,244], next:0 }
+  ];
 
-  // ===== Canvas sizing =====
-  function resizeCanvas() {
-    const dpr = window.devicePixelRatio || 1;
-    const rect = boardWrap.getBoundingClientRect();
-    if (rect.width < 1) return;
-    canvas.width = Math.round(rect.width * dpr);
-    canvas.height = Math.round(rect.height * dpr);
-    const scale = rect.width / W;
-    ctx.setTransform(dpr * scale, 0, 0, dpr * scale, 0, 0);
+  function rnd(a,b){ return a + Math.random() * (b-a); }
+  function clamp(v,a,b){ return Math.max(a, Math.min(b, v)); }
+  function pick(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+  function now(){ return performance.now(); }
+
+  function sizeCanvas(){
+    const r = wrap.getBoundingClientRect();
+    const dpr = Math.max(1, window.devicePixelRatio || 1);
+    const scale = Math.min(r.width / W, r.height / H);
+    canvas.width = Math.round(r.width * dpr);
+    canvas.height = Math.round(r.height * dpr);
+    ctx.setTransform(dpr*scale,0,0,dpr*scale,(r.width-W*scale)*dpr/2,(r.height-H*scale)*dpr/2);
   }
-  window.addEventListener('resize', resizeCanvas);
-  window.addEventListener('load', resizeCanvas);
+  window.addEventListener('resize', sizeCanvas);
 
-  // ===== Stage / gate generation =====
-  function pickEffects(n, count) {
-    // Pool changes with stage difficulty
-    const pool = [
-      { type:'*', val:2, label:'×2', color: COL.mult, weight: 4 },
-      { type:'*', val:3, label:'×3', color: COL.mult, weight: n >= 2 ? 2 : 0 },
-      { type:'+', val:10, label:'+10', color: COL.good, weight: 3 },
-      { type:'+', val:20, label:'+20', color: COL.good, weight: 3 },
-      { type:'+', val:30, label:'+30', color: COL.good, weight: n >= 2 ? 2 : 1 },
-      { type:'-', val:10, label:'-10', color: COL.bad, weight: n >= 1 ? 2 : 0 },
-      { type:'-', val:25, label:'-25', color: COL.bad, weight: n >= 3 ? 2 : 0 },
-      { type:'/', val:2, label:'÷2', color: COL.bad, weight: n >= 4 ? 1 : 0 },
-    ];
-    function pickOne() {
-      const valid = pool.filter(p => p.weight > 0);
-      const total = valid.reduce((s, p) => s + p.weight, 0);
-      let r = Math.random() * total;
-      for (const p of valid) { r -= p.weight; if (r <= 0) return p; }
-      return valid[valid.length - 1];
-    }
-    const picked = [];
-    let tries = 0;
-    while (picked.length < count && tries < 50) {
-      tries++;
-      const e = pickOne();
-      // Avoid two identical effects in same row
-      if (picked.some(p => p.label === e.label)) continue;
-      picked.push(e);
-    }
-    // ensure at least one non-bad
-    if (!picked.some(p => p.type === '*' || p.type === '+')) {
-      picked[0] = { type:'+', val:20, label:'+20', color: COL.good };
-    }
-    return picked;
+  function show(eyebrow,title,body,btn,fn){
+    ovEyebrow.textContent = eyebrow;
+    ovTitle.innerHTML = title;
+    ovBody.innerHTML = body;
+    ovBtn.textContent = btn;
+    ovBtn.onclick = fn;
+    overlay.classList.remove('hidden');
   }
 
-  function buildStage(n) {
+  function restart(){
+    stage = 1;
+    power = 1;
+    fireRate = 82;
+    mobSpeed = 5.1;
+    cannon.x = cannon.targetX = W/2;
+    buildStage();
+    show('READY','대포를 움직여<br>게이트를 맞춰라',
+      '대포는 <strong>하단에서 좌우 이동</strong>합니다.<br>병사는 위로 자동 발사되고, <strong>게이트는 일정 시간 후 사라진 뒤 다른 위치에 재생성</strong>됩니다.<br>좋은 게이트가 나왔을 때 빠르게 위치를 잡는 것이 핵심입니다.',
+      '시작', startGame);
+  }
+
+  function buildStage(){
+    mobs = [];
+    enemies = [];
     gates = [];
-    let gid = 0;
-    for (let r = 0; r < GATE_ROWS_Y.length; r++) {
-      const effects = pickEffects(n, LANES);
-      for (let c = 0; c < LANES; c++) {
-        const x = 3 + c * LANE_W;
-        const w = LANE_W - 2;
-        gates.push({ id: gid++, x, y: GATE_ROWS_Y[r], w, h: 38, effect: effects[c], deactivated: false });
-      }
-    }
-    enemy.maxHp = 500 + (n - 1) * 350;
-    enemy.hp = enemy.maxHp;
-    enemy.redSpawnMs = Math.max(50, 140 - (n - 1) * 14);
-    enemy.redLastSpawn = 0;
-    blues = [];
-    reds = [];
-    particles = [];
-    // Pre-spawn an initial crowd so the screen is alive from frame 1
-    for (let i = 0; i < 25; i++) {
-      blues.push({
-        x: W / 2 + (Math.random() * 100 - 50),
-        y: SPAWNER_Y - 12 - Math.random() * 60,
-        alive: true,
-      });
-    }
-    stageStartMs = performance.now();
-    lastBlueSpawn = 0;
+    fx = [];
+    base.max = 420 + stage * 170;
+    base.hp = base.max;
+    gateSlots.forEach((s, i) => { s.next = now() + 300 + i*520; });
+    for (let i=0;i<2+Math.min(4, stage);i++) spawnEnemyPack(rnd(110, 270), 12 + stage*3, 0);
     updateUI();
   }
 
-  function updateUI() {
-    stageEl.textContent = stage;
-    armyEl.textContent = blues.length;
-    hpEl.textContent = enemy.hp;
-    const elapsed = state === 'playing' ? (performance.now() - stageStartMs) / 1000 : 0;
-    timeEl.textContent = Math.max(0, Math.ceil(TIME_LIMIT - elapsed));
+  function startGame(){
+    state = 'playing';
+    overlay.classList.add('hidden');
+    startAt = now();
+    lastTs = startAt;
+    lastFire = 0;
+    lastEnemy = 0;
+    if (!raf) raf = requestAnimationFrame(loop);
   }
 
-  // ===== Game flow =====
-  function start() {
-    overlay.classList.remove('show');
-    state = 'playing';
-    statusEl.textContent = '게이트로 군대를 키우세요!';
-    statusEl.className = 'status go';
-    stageStartMs = performance.now();
-    lastTs = performance.now();
-    if (rafId) cancelAnimationFrame(rafId);
-    rafId = requestAnimationFrame(loop);
+  function togglePause(){
+    if (state === 'ready') return startGame();
+    if (state === 'playing'){
+      state = 'paused';
+      pausedAt = now();
+      pauseBtn.textContent = '재개';
+      show('PAUSED','일시정지',`현재 병력 <strong>${mobs.length}</strong><br>적 기지 HP <strong>${Math.ceil(base.hp)}</strong>`,'재개',togglePause);
+    } else if (state === 'paused'){
+      state = 'playing';
+      pauseBtn.textContent = '일시정지';
+      overlay.classList.add('hidden');
+      const diff = now() - pausedAt;
+      startAt += diff;
+      gateSlots.forEach(s => s.next += diff);
+      gates.forEach(g => g.born += diff);
+      lastTs = now();
+    }
   }
-  function pause() {
-    if (state !== 'playing') return;
-    state = 'paused';
-    pauseBtn.textContent = '재개';
-    statusEl.textContent = '일시정지';
-    statusEl.className = 'status';
-    showOverlay('Paused', '일시정지', `스테이지 <strong>${stage}</strong> · 군대 <strong>${blues.length}</strong>`, '재개', resume, '');
-  }
-  function resume() {
-    if (state !== 'paused') return;
-    state = 'playing';
-    pauseBtn.textContent = '일시정지';
-    statusEl.textContent = '진행 중';
-    statusEl.className = 'status go';
-    overlay.classList.remove('show');
-    const now = performance.now();
-    const pausedFor = now - lastTs;
-    stageStartMs += pausedFor;
-    lastTs = now;
-  }
-  function togglePause() { if (state === 'playing') pause(); else if (state === 'paused') resume(); }
 
-  function win() {
+  function upgrade(){
+    if (state === 'playing') return;
+    power += 1;
+    fireRate = Math.max(46, fireRate - 7);
+    mobSpeed = Math.min(6.7, mobSpeed + 0.10);
+    toast(W/2, H-124, '강화 완료', COLORS.gold, 44);
+    updateUI();
+  }
+
+  function win(){
     state = 'cleared';
-    if (stage > best) { best = stage; saveBest(best); }
-    statusEl.textContent = `스테이지 ${stage} 클리어!`;
-    statusEl.className = 'status win';
-    setTimeout(() => showOverlay('Victory', `스테이지 ${stage} 클리어`, `남은 군대 <strong>${blues.length}</strong> · 남은 시간 <strong>${Math.max(0, Math.ceil(TIME_LIMIT - (performance.now() - stageStartMs) / 1000))}초</strong>`, '다음 스테이지', nextStage, 'win'), 350);
+    const remain = Math.max(0, Math.ceil(LIMIT - (now()-startAt)/1000));
+    show('VICTORY',`스테이지 ${stage} 클리어`,
+      `남은 병력 <strong>${mobs.length}</strong><br>남은 시간 <strong>${remain}초</strong><br>다음 스테이지는 적과 기지 HP가 증가합니다.`,
+      '다음 스테이지', () => { stage++; buildStage(); startGame(); });
   }
-  function nextStage() { stage++; buildStage(stage); start(); }
-  function lose() {
+
+  function lose(reason='시간 초과'){
     state = 'over';
-    statusEl.textContent = '시간 초과 · 패배';
-    statusEl.className = 'status lose';
-    if (navigator.vibrate) navigator.vibrate(80);
-    setTimeout(() => showOverlay('Defeat', `스테이지 ${stage} 실패`, `최고 스테이지 <strong>${best}</strong>`, '처음부터', restartFromOne, 'lose'), 250);
-  }
-  function restartFromOne() { stage = 1; buildStage(1); start(); }
-
-  function showOverlay(eyebrow, title, body, btnText, btnFn, cls) {
-    overlay.className = 'overlay show' + (cls ? ' ' + cls : '');
-    ovEyebrow.textContent = eyebrow;
-    ovTitle.textContent = title;
-    ovStat.innerHTML = body;
-    ovBtn.textContent = btnText;
-    ovBtn.onclick = btnFn;
+    if (navigator.vibrate) navigator.vibrate(70);
+    show('DEFEAT',`스테이지 ${stage} 실패`,`${reason}<br>좋은 게이트가 나타났을 때 대포 위치를 빠르게 바꿔야 합니다.`,'처음부터',restart);
   }
 
-  // ===== Loop =====
-  function loop(ts) {
-    const dt = Math.min(50, ts - lastTs);
+  function gatePool(){
+    const pool = [
+      {type:'mult', value:2, label:'×2', c:COLORS.gold, weight:5},
+      {type:'mult', value:3, label:'×3', c:COLORS.gold, weight:stage>=2?2:1},
+      {type:'add', value:12, label:'+12', c:COLORS.green, weight:3},
+      {type:'add', value:24, label:'+24', c:COLORS.green, weight:3},
+      {type:'add', value:40, label:'+40', c:COLORS.green, weight:stage>=3?2:0},
+      {type:'sub', value:14, label:'-14', c:COLORS.bad, weight:2},
+      {type:'sub', value:28, label:'-28', c:COLORS.bad, weight:stage>=2?2:1},
+      {type:'div', value:2, label:'÷2', c:COLORS.bad, weight:stage>=3?2:0}
+    ];
+    return pool.filter(x=>x.weight>0);
+  }
+
+  function weightedPick(list){
+    const total = list.reduce((s,x)=>s+x.weight,0);
+    let r = Math.random()*total;
+    for (const x of list){ r -= x.weight; if (r <= 0) return x; }
+    return list[list.length-1];
+  }
+
+  function spawnGateSet(slot, ts){
+    const y = rnd(slot.band[0], slot.band[1]);
+    const ttl = rnd(4300, 6200) - Math.min(900, stage*90);
+    const list = gatePool();
+    let a = weightedPick(list);
+    let b = weightedPick(list.filter(x=>x.label!==a.label));
+
+    // Always give at least one tempting positive choice.
+    if ((a.type==='sub'||a.type==='div') && (b.type==='sub'||b.type==='div')) {
+      a = pick(list.filter(x=>x.type==='add'||x.type==='mult'));
+    }
+
+    const w = rnd(92, 120);
+    const gap = rnd(34, 56);
+    const center = rnd(ROAD_L + 145, ROAD_R - 145);
+    let x1 = clamp(center - gap/2 - w, ROAD_L + 16, ROAD_R - 16 - w);
+    let x2 = clamp(center + gap/2, ROAD_L + 16, ROAD_R - 16 - w);
+    if (x2 - (x1+w) < 24) { x1 = ROAD_L + 50; x2 = ROAD_R - 50 - w; }
+
+    const common = { y, w, h:46, born:ts, ttl, alpha:0, hitCount:0, vy:rnd(-0.04,0.04), shake:0 };
+    gates.push({ id:'g'+gateSeq++, x:x1, e:a, vx:rnd(-0.10,0.10), ...common });
+    gates.push({ id:'g'+gateSeq++, x:x2, e:b, vx:rnd(-0.10,0.10), ...common });
+    slot.next = ts + ttl + rnd(900, 1800);
+  }
+
+  function updateGateLifecycle(ts, f){
+    for (const slot of gateSlots){
+      if (ts >= slot.next) spawnGateSet(slot, ts);
+    }
+    for (const g of gates){
+      const age = ts - g.born;
+      const fadeIn = clamp(age / 360, 0, 1);
+      const fadeOut = clamp((g.ttl - age) / 720, 0, 1);
+      g.alpha = Math.min(fadeIn, fadeOut);
+      g.x += g.vx * f;
+      g.y += g.vy * f;
+      if (g.x < ROAD_L + 10 || g.x + g.w > ROAD_R - 10) g.vx *= -1;
+      g.x = clamp(g.x, ROAD_L + 10, ROAD_R - 10 - g.w);
+      if (g.shake > 0) g.shake -= f;
+    }
+    gates = gates.filter(g => ts - g.born < g.ttl && g.alpha > 0.02);
+  }
+
+  function fire(ts){
+    if (ts - lastFire < fireRate) return;
+    if (mobs.length >= MAX_MOBS) return;
+    const recoil = cannon.vx * 0.05;
+    const spread = rnd(-0.16, 0.16);
+    mobs.push({
+      x:cannon.x + rnd(-5,5), y:CANNON_Y-28,
+      vx:recoil + spread, vy:-mobSpeed,
+      r:4.3, alive:true, passed:new Set()
+    });
+    lastFire = ts;
+  }
+
+  function cloneMob(m,g){
+    return {x:clamp(m.x+rnd(-18,18), ROAD_L+14, ROAD_R-14), y:m.y+rnd(-8,8), vx:m.vx+rnd(-.22,.22), vy:m.vy+rnd(-.10,.12), r:m.r, alive:true, passed:new Set(m.passed)};
+  }
+
+  function applyGate(g, m){
+    if (m.passed.has(g.id)) return;
+    m.passed.add(g.id);
+    g.hitCount++;
+    g.shake = 6;
+    const e = g.e;
+    let msg = e.label;
+    if (e.type === 'mult'){
+      const add = Math.min(MAX_MOBS - mobs.length, e.value - 1);
+      for (let i=0;i<add;i++) mobs.push(cloneMob(m,g));
+    } else if (e.type === 'add'){
+      const add = Math.min(MAX_MOBS - mobs.length, e.value);
+      for (let i=0;i<add;i++) mobs.push(cloneMob(m,g));
+    } else if (e.type === 'sub'){
+      const near = mobs.filter(x=>x.alive && Math.abs(x.y-g.y)<86 && x.x>g.x-48 && x.x<g.x+g.w+48);
+      const killed = Math.min(e.value, near.length);
+      near.slice(0,killed).forEach(x=>x.alive=false);
+      msg = '-' + killed;
+    } else if (e.type === 'div'){
+      const near = mobs.filter(x=>x.alive && Math.abs(x.y-g.y)<96 && x.x>g.x-56 && x.x<g.x+g.w+56);
+      const killed = Math.floor(near.length / 2);
+      near.slice(0,killed).forEach(x=>x.alive=false);
+      msg = '÷2';
+    }
+    toast(g.x+g.w/2, g.y-8, msg, e.c, 24);
+    spark(g.x+g.w/2, g.y+g.h/2, e.c, 4);
+  }
+
+  function spawnEnemyPack(y, n, vy=0.28){
+    for (let i=0;i<n;i++){
+      enemies.push({x:rnd(ROAD_L+40, ROAD_R-40), y:y+rnd(-20,20), vy:vy?rnd(vy,vy+.28):0, r:4.8, alive:true});
+    }
+  }
+
+  function spawnLiveEnemies(ts){
+    const ms = Math.max(390, 1050 - stage*70);
+    if (ts - lastEnemy < ms) return;
+    const n = 4 + Math.floor(stage*1.35);
+    spawnEnemyPack(105, n, 0.42);
+    lastEnemy = ts;
+  }
+
+  function toast(x,y,text,color,life=28){ fx.push({type:'text',x,y,text,color,life,vy:-.58}); }
+  function spark(x,y,color,count=5){ for(let i=0;i<count;i++) fx.push({type:'dot',x,y,vx:rnd(-1.6,1.6),vy:rnd(-1.7,1.2),r:rnd(2,4),color,life:rnd(12,22)}); }
+
+  function update(ts, dt){
+    const f = dt / 16.67;
+
+    if (left) cannon.targetX -= 6.2 * f;
+    if (right) cannon.targetX += 6.2 * f;
+    cannon.targetX = clamp(cannon.targetX, ROAD_L+35, ROAD_R-35);
+    const oldX = cannon.x;
+    cannon.x += (cannon.targetX - cannon.x) * 0.28;
+    cannon.vx = cannon.x - oldX;
+
+    fire(ts);
+    spawnLiveEnemies(ts);
+    updateGateLifecycle(ts, f);
+
+    for (const m of mobs){
+      if (!m.alive) continue;
+      // Narrow stream: not fully vertical, but readable and controllable.
+      m.vx *= Math.pow(0.992, f);
+      m.x += m.vx * f;
+      m.y += m.vy * f;
+      if (m.x < ROAD_L + 10){ m.x = ROAD_L + 10; m.vx *= -0.32; }
+      if (m.x > ROAD_R - 10){ m.x = ROAD_R - 10; m.vx *= -0.32; }
+
+      for (const g of gates){
+        if (g.alpha < 0.35) continue;
+        if (m.x > g.x && m.x < g.x+g.w && m.y > g.y && m.y < g.y+g.h) applyGate(g,m);
+      }
+
+      if (m.y < BASE_Y + BASE_H + 4 && m.x > ROAD_L+12 && m.x < ROAD_R-12){
+        base.hp = Math.max(0, base.hp - power);
+        m.alive = false;
+        if (Math.random() < .35) spark(m.x, BASE_Y+BASE_H+6, COLORS.red, 3);
+      }
+      if (m.y < -20 || m.y > H + 20) m.alive = false;
+    }
+
+    for (const e of enemies){
+      if (!e.alive) continue;
+      e.y += e.vy * f;
+      if (e.y > H-88) e.alive = false;
+    }
+
+    // 1:1 collision. Good enough for prototype scale.
+    for (let i=0;i<mobs.length;i++){
+      const m = mobs[i]; if (!m.alive) continue;
+      for (let j=0;j<enemies.length;j++){
+        const e = enemies[j]; if (!e.alive) continue;
+        const dx = m.x-e.x, dy = m.y-e.y;
+        if (dx*dx + dy*dy < 86){
+          m.alive = false;
+          e.alive = false;
+          spark((m.x+e.x)/2, (m.y+e.y)/2, COLORS.gold, 4);
+          break;
+        }
+      }
+    }
+
+    mobs = mobs.filter(x=>x.alive);
+    enemies = enemies.filter(x=>x.alive);
+    for (const p of fx){
+      p.life -= f;
+      if (p.type === 'text') p.y += p.vy*f;
+      else { p.x += p.vx*f; p.y += p.vy*f; p.r *= .985; }
+    }
+    fx = fx.filter(p=>p.life>0);
+
+    const elapsed = (ts - startAt) / 1000;
+    if (base.hp <= 0) return win();
+    if (elapsed >= LIMIT) return lose('시간 초과');
+    updateUI();
+  }
+
+  function updateUI(){
+    stageEl.textContent = stage;
+    mobEl.textContent = mobs.length;
+    hpEl.textContent = Math.ceil(base.hp);
+    powEl.textContent = power;
+    const t = state === 'playing' ? Math.max(0, Math.ceil(LIMIT - (now()-startAt)/1000)) : LIMIT;
+    timeEl.textContent = t;
+  }
+
+  function clearCanvasBacking(){
+    ctx.save();
+    ctx.setTransform(1,0,0,1,0,0);
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.restore();
+  }
+
+  function draw(){
+    clearCanvasBacking();
+    drawWorld();
+    drawBase();
+    gates.forEach(drawGate);
+    enemies.forEach(drawEnemy);
+    mobs.forEach(drawMob);
+    drawCannon();
+    fx.forEach(drawFx);
+  }
+
+  function drawWorld(){
+    ctx.fillStyle = COLORS.bg; ctx.fillRect(0,0,W,H);
+    ctx.fillStyle = COLORS.road; ctx.fillRect(ROAD_L,0,ROAD_R-ROAD_L,H);
+    ctx.fillStyle = COLORS.wall; ctx.fillRect(0,0,ROAD_L,H); ctx.fillRect(ROAD_R,0,W-ROAD_R,H);
+    ctx.fillStyle = COLORS.wallDark; ctx.fillRect(ROAD_L-5,0,5,H); ctx.fillRect(ROAD_R,0,5,H);
+    ctx.fillStyle = COLORS.lane;
+    for (let y=142;y<H;y+=82) ctx.fillRect(ROAD_L,y,ROAD_R-ROAD_L,2);
+    ctx.fillStyle = 'rgba(10,10,10,.05)';
+    ctx.fillRect(W/2-1,96,2,H-166);
+  }
+
+  function drawBase(){
+    ctx.fillStyle = COLORS.red2; ctx.fillRect(ROAD_L+8,BASE_Y,ROAD_R-ROAD_L-16,BASE_H);
+    ctx.fillStyle = COLORS.red; ctx.fillRect(ROAD_L+14,BASE_Y+6,ROAD_R-ROAD_L-28,BASE_H-12);
+    for(let i=0;i<6;i++){ ctx.fillStyle = COLORS.red2; ctx.fillRect(ROAD_L+22+i*55,BASE_Y-8,30,18); }
+    const barW = ROAD_R-ROAD_L-56;
+    ctx.fillStyle = '#4A120D'; ctx.fillRect(ROAD_L+28,BASE_Y+BASE_H+10,barW,10);
+    ctx.fillStyle = COLORS.gold; ctx.fillRect(ROAD_L+28,BASE_Y+BASE_H+10,barW*(base.hp/base.max),10);
+    ctx.fillStyle = COLORS.white; ctx.font='950 24px system-ui'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(Math.ceil(base.hp), W/2, BASE_Y+BASE_H/2+1);
+  }
+
+  function drawGate(g){
+    ctx.save();
+    ctx.globalAlpha = g.alpha;
+    const sx = g.shake > 0 ? rnd(-1.8,1.8) : 0;
+    const sy = g.shake > 0 ? rnd(-1.2,1.2) : 0;
+    ctx.translate(sx, sy);
+    ctx.fillStyle = COLORS.shadow; ctx.fillRect(g.x+3,g.y+5,g.w,g.h);
+    ctx.fillStyle = g.e.c; ctx.fillRect(g.x,g.y,g.w,g.h);
+    ctx.fillStyle = 'rgba(0,0,0,.18)'; ctx.fillRect(g.x,g.y,g.w,5); ctx.fillRect(g.x,g.y+g.h-5,g.w,5);
+    ctx.strokeStyle = COLORS.white; ctx.lineWidth = 2; ctx.strokeRect(g.x+2,g.y+2,g.w-4,g.h-4);
+    ctx.fillStyle = COLORS.white; ctx.font='950 27px system-ui'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(g.e.label, g.x+g.w/2, g.y+g.h/2+1);
+    // TTL bar: makes "will disappear" visible.
+    const age = now() - g.born;
+    const ratio = clamp(1 - age/g.ttl, 0, 1);
+    ctx.fillStyle = 'rgba(255,255,255,.32)'; ctx.fillRect(g.x, g.y+g.h+5, g.w, 4);
+    ctx.fillStyle = COLORS.white; ctx.fillRect(g.x, g.y+g.h+5, g.w*ratio, 4);
+    ctx.restore();
+  }
+
+  function drawMob(m){
+    ctx.fillStyle = COLORS.blue2; ctx.beginPath(); ctx.arc(m.x,m.y,m.r+1.8,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle = COLORS.white; ctx.beginPath(); ctx.arc(m.x,m.y,m.r,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle = COLORS.blue; ctx.fillRect(m.x-2,m.y+3,4,6);
+  }
+
+  function drawEnemy(e){
+    ctx.fillStyle = COLORS.red2; ctx.beginPath(); ctx.arc(e.x,e.y,e.r+1.8,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle = COLORS.red; ctx.beginPath(); ctx.arc(e.x,e.y,e.r,0,Math.PI*2); ctx.fill();
+  }
+
+  function drawCannon(){
+    const x = cannon.x;
+    // target lane guide
+    ctx.strokeStyle = 'rgba(31,111,235,.18)'; ctx.lineWidth = 12; ctx.lineCap='round';
+    ctx.beginPath(); ctx.moveTo(x, CANNON_Y-12); ctx.lineTo(x, CANNON_Y-178); ctx.stroke();
+    ctx.strokeStyle = COLORS.ink; ctx.lineWidth = 20; ctx.lineCap='round';
+    ctx.beginPath(); ctx.moveTo(x, CANNON_Y); ctx.lineTo(x, CANNON_Y-48); ctx.stroke();
+    ctx.strokeStyle = COLORS.blue; ctx.lineWidth = 12;
+    ctx.beginPath(); ctx.moveTo(x, CANNON_Y); ctx.lineTo(x, CANNON_Y-48); ctx.stroke();
+    ctx.fillStyle = COLORS.ink; ctx.beginPath(); ctx.arc(x,CANNON_Y,32,Math.PI,0); ctx.fill();
+    ctx.fillStyle = COLORS.blue; ctx.beginPath(); ctx.arc(x,CANNON_Y,23,Math.PI,0); ctx.fill();
+    ctx.fillStyle = COLORS.gold; ctx.fillRect(x-45,CANNON_Y+10,90,16);
+    ctx.fillStyle = COLORS.ink; ctx.beginPath(); ctx.arc(x-26,CANNON_Y+26,8,0,Math.PI*2); ctx.arc(x+26,CANNON_Y+26,8,0,Math.PI*2); ctx.fill();
+  }
+
+  function drawFx(p){
+    const a = Math.max(0, Math.min(1, p.life/28));
+    ctx.save(); ctx.globalAlpha = a;
+    if (p.type === 'text'){
+      ctx.fillStyle = p.color; ctx.font='950 21px system-ui'; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.lineWidth = 4; ctx.strokeStyle = COLORS.white; ctx.strokeText(p.text,p.x,p.y); ctx.fillText(p.text,p.x,p.y);
+    } else {
+      ctx.fillStyle = p.color; ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2); ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  function loop(ts){
+    const dt = Math.min(50, ts - lastTs || 16.67);
     lastTs = ts;
     if (state === 'playing') update(ts, dt);
     draw();
-    rafId = requestAnimationFrame(loop);
+    raf = requestAnimationFrame(loop);
   }
 
-  function update(ts, dt) {
-    const fs = dt / 16.67;
-
-    // Spawn blues
-    if (ts - lastBlueSpawn >= BLUE_SPAWN_MS && blues.length < MAX_STICK) {
-      blues.push({ x: player.x + (Math.random() * 14 - 7), y: SPAWNER_Y - 8, alive: true });
-      lastBlueSpawn = ts;
-    }
-
-    // Spawn reds (enemy)
-    if (enemy.hp > 0 && ts - enemy.redLastSpawn >= enemy.redSpawnMs && reds.length < MAX_STICK) {
-      reds.push({ x: 60 + Math.random() * (W - 120), y: ENEMY_Y + ENEMY_H + 4, alive: true });
-      enemy.redLastSpawn = ts;
-    }
-
-    // Move blues
-    for (const b of blues) {
-      if (!b.alive) continue;
-      const py = b.y;
-      b.y -= BLUE_SPEED * fs;
-      // gate triggers on crossing bottom edge from below (moving up)
-      for (const g of gates) {
-        if (g.deactivated) continue;
-        if (b.x < g.x || b.x > g.x + g.w) continue;
-        const gateBottom = g.y + g.h;
-        if (py > gateBottom && b.y <= gateBottom) {
-          applyGate(g, b);
-          if (!b.alive) break;
-        }
-      }
-      // hit enemy base
-      if (b.alive && b.y <= ENEMY_Y + ENEMY_H && b.x >= 30 && b.x <= W - 30 && enemy.hp > 0) {
-        enemy.hp = Math.max(0, enemy.hp - 1);
-        b.alive = false;
-        spawnParticle(b.x, ENEMY_Y + ENEMY_H, COL.red);
-      }
-      // off screen top
-      if (b.y < -10) b.alive = false;
-    }
-
-    // Move reds
-    for (const r of reds) {
-      if (!r.alive) continue;
-      r.y += RED_SPEED * fs;
-      if (r.y > H + 10) r.alive = false;
-    }
-
-    // Clash blues vs reds (1:1)
-    for (let i = 0; i < blues.length; i++) {
-      const b = blues[i]; if (!b.alive) continue;
-      for (let j = 0; j < reds.length; j++) {
-        const r = reds[j]; if (!r.alive) continue;
-        const dx = b.x - r.x;
-        if (dx > CLASH_DIST || dx < -CLASH_DIST) continue;
-        const dy = b.y - r.y;
-        if (dy > CLASH_DIST || dy < -CLASH_DIST) continue;
-        b.alive = false; r.alive = false;
-        spawnParticle((b.x + r.x) / 2, (b.y + r.y) / 2, COL.mult);
-        break;
-      }
-    }
-
-    // Cleanup
-    blues = blues.filter(b => b.alive);
-    reds = reds.filter(r => r.alive);
-
-    // Particles
-    for (const p of particles) { p.life -= fs; p.r += 0.4 * fs; }
-    particles = particles.filter(p => p.life > 0);
-
-    updateUI();
-
-    // Win / lose
-    if (enemy.hp <= 0) return win();
-    const elapsed = (ts - stageStartMs) / 1000;
-    if (elapsed >= TIME_LIMIT) return lose();
+  function pointerToWorld(e){
+    const r = wrap.getBoundingClientRect();
+    const px = ('touches' in e && e.touches.length) ? e.touches[0].clientX : e.clientX;
+    const scale = Math.min(r.width / W, r.height / H);
+    const offsetX = (r.width - W*scale) / 2;
+    const x = (px - r.left - offsetX) / scale;
+    return clamp(x, ROAD_L+35, ROAD_R-35);
+  }
+  function setCannonByPointer(e){
+    if (state !== 'playing') return;
+    cannon.targetX = pointerToWorld(e);
+    if (e.cancelable) e.preventDefault();
   }
 
-  // ===== Gate effects (PER STICKMAN) =====
-  function applyGate(g, b) {
-    const e = g.effect;
-    if (e.type === '*') {
-      // Each passing stickman spawns (val - 1) clones
-      const add = e.val - 1;
-      for (let i = 0; i < add && blues.length < MAX_STICK; i++) {
-        blues.push({ x: g.x + Math.random() * g.w, y: g.y + g.h - 2, alive: true });
-      }
-      // multiplier gates STAY ACTIVE
-    } else if (e.type === '+') {
-      const add = e.val;
-      for (let i = 0; i < add && blues.length < MAX_STICK; i++) {
-        blues.push({ x: g.x + Math.random() * g.w, y: g.y + g.h - 2, alive: true });
-      }
-      g.deactivated = true;  // additive: one-time bonus
-    } else if (e.type === '-') {
-      // kill val blues currently in the lane (around this gate)
-      let killed = 0;
-      for (const x of blues) {
-        if (!x.alive) continue;
-        if (x.x < g.x - 5 || x.x > g.x + g.w + 5) continue;
-        if (Math.abs(x.y - g.y) > 80) continue;
-        x.alive = false; killed++;
-        if (killed >= e.val) break;
-      }
-      g.deactivated = true;
-    } else if (e.type === '/') {
-      // halve current blues in lane
-      let count = 0;
-      const cand = [];
-      for (const x of blues) {
-        if (!x.alive) continue;
-        if (x.x < g.x - 5 || x.x > g.x + g.w + 5) continue;
-        cand.push(x);
-      }
-      const remove = Math.floor(cand.length / 2);
-      for (let i = 0; i < remove; i++) cand[i].alive = false;
-      g.deactivated = true;
-    }
-  }
+  wrap.addEventListener('pointerdown', e => { wrap.setPointerCapture?.(e.pointerId); setCannonByPointer(e); });
+  wrap.addEventListener('pointermove', setCannonByPointer);
+  wrap.addEventListener('touchmove', setCannonByPointer, {passive:false});
 
-  function spawnParticle(x, y, color) {
-    if (particles.length > 40) return;
-    particles.push({ x, y, r: 2, life: 8, color });
-  }
-
-  // ===== Draw =====
-  function draw() {
-    // Background
-    ctx.fillStyle = COL.field;
-    ctx.fillRect(0, 0, W, H);
-    // mid lane guides
-    ctx.fillStyle = COL.line;
-    for (let i = 1; i < LANES; i++) {
-      ctx.fillRect(i * LANE_W, 0, 1, H);
-    }
-
-    // Enemy base
-    drawEnemyBase();
-
-    // Gates
-    for (const g of gates) {
-      const used = g.deactivated;
-      ctx.fillStyle = used ? '#A89878' : g.effect.color;
-      ctx.globalAlpha = used ? 0.3 : 1;
-      ctx.fillRect(g.x, g.y, g.w, g.h);
-      // top/bottom thick edge
-      ctx.fillStyle = used ? '#7A6B4F' : darken(g.effect.color);
-      ctx.fillRect(g.x, g.y, g.w, 3);
-      ctx.fillRect(g.x, g.y + g.h - 3, g.w, 3);
-      ctx.globalAlpha = 1;
-      // label
-      ctx.fillStyle = used ? '#3D332A' : COL.text;
-      ctx.font = 'bold 18px "EB Garamond", serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(g.effect.label, g.x + g.w / 2, g.y + g.h / 2);
-    }
-
-    // Stickmen
-    for (const b of blues) if (b.alive) drawStick(b.x, b.y, COL.blue);
-    for (const r of reds) if (r.alive) drawStick(r.x, r.y, COL.red);
-
-    // Particles
-    for (const p of particles) {
-      ctx.globalAlpha = Math.min(1, p.life / 8);
-      ctx.fillStyle = p.color;
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.globalAlpha = 1;
-    }
-
-    // Spawner (player cannon)
-    const sx = player.x;
-    ctx.fillStyle = COL.spawnerEdge;
-    ctx.fillRect(sx - 26, SPAWNER_Y - 4, 52, 28);
-    ctx.fillStyle = COL.spawner;
-    ctx.fillRect(sx - 22, SPAWNER_Y - 8, 44, 22);
-    // barrel
-    ctx.fillStyle = COL.spawnerEdge;
-    ctx.fillRect(sx - 5, SPAWNER_Y - 18, 10, 14);
-  }
-
-  function drawEnemyBase() {
-    // Castle-like rectangle at top
-    ctx.fillStyle = COL.enemyEdge;
-    ctx.fillRect(20, ENEMY_Y, W - 40, ENEMY_H);
-    ctx.fillStyle = COL.enemy;
-    ctx.fillRect(24, ENEMY_Y + 4, W - 48, ENEMY_H - 8);
-    // Battlements
-    for (let i = 0; i < 5; i++) {
-      const bx = 30 + i * (W - 60) / 5;
-      ctx.fillStyle = COL.enemyEdge;
-      ctx.fillRect(bx, ENEMY_Y - 6, 14, 8);
-    }
-    // HP bar
-    const hpW = W - 60;
-    ctx.fillStyle = '#3A0A05';
-    ctx.fillRect(30, ENEMY_Y + ENEMY_H + 6, hpW, 6);
-    const ratio = enemy.maxHp > 0 ? enemy.hp / enemy.maxHp : 0;
-    ctx.fillStyle = COL.red;
-    ctx.fillRect(30, ENEMY_Y + ENEMY_H + 6, hpW * ratio, 6);
-    // HP text
-    ctx.fillStyle = COL.text;
-    ctx.font = 'bold 18px "EB Garamond", serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(enemy.hp + ' / ' + enemy.maxHp, W / 2, ENEMY_Y + ENEMY_H / 2);
-  }
-
-  function drawStick(x, y, color) {
-    ctx.fillStyle = color;
-    // head
-    ctx.beginPath();
-    ctx.arc(x, y - 3, STICK_R, 0, Math.PI * 2);
-    ctx.fill();
-    // body
-    ctx.fillRect(x - 1.2, y, 2.4, 5);
-  }
-
-  function darken(hex) {
-    // tiny helper: return slightly darker shade for edges
-    const map = { [COL.good]: '#1F5635', [COL.bad]: '#8A2A1F', [COL.mult]: '#8A6A38' };
-    return map[hex] || '#000';
-  }
-
-  // ===== Input =====
-  let dragging = false;
-  function ptX(e) {
-    const t = e.touches ? e.touches[0] : e;
-    const rect = boardWrap.getBoundingClientRect();
-    return ((t.clientX - rect.left) / rect.width) * W;
-  }
-  function clampX(x) { return Math.max(28, Math.min(W - 28, x)); }
-  function dragStart(e) { if (state !== 'playing') return; dragging = true; player.x = clampX(ptX(e)); if (e.cancelable) e.preventDefault(); }
-  function dragMove(e) { if (!dragging || state !== 'playing') return; player.x = clampX(ptX(e)); if (e.cancelable) e.preventDefault(); }
-  function dragEnd() { dragging = false; }
-
-  boardWrap.addEventListener('touchstart', dragStart, { passive: false });
-  boardWrap.addEventListener('touchmove', dragMove, { passive: false });
-  boardWrap.addEventListener('touchend', dragEnd);
-  boardWrap.addEventListener('touchcancel', dragEnd);
-  boardWrap.addEventListener('mousedown', dragStart);
-  window.addEventListener('mousemove', dragMove);
-  window.addEventListener('mouseup', dragEnd);
-
-  let keyLeft = false, keyRight = false;
   window.addEventListener('keydown', e => {
-    if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') { keyLeft = true; e.preventDefault(); }
-    if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') { keyRight = true; e.preventDefault(); }
-    if (e.key === 'p' || e.key === 'P') { togglePause(); e.preventDefault(); }
-    if ((e.key === ' ' || e.key === 'Enter') && state === 'ready') { e.preventDefault(); start(); }
+    if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A'){ left = true; e.preventDefault(); }
+    if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D'){ right = true; e.preventDefault(); }
+    if (e.key === 'p' || e.key === 'P'){ togglePause(); e.preventDefault(); }
+    if ((e.key === ' ' || e.key === 'Enter') && state === 'ready'){ startGame(); e.preventDefault(); }
   });
   window.addEventListener('keyup', e => {
-    if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') keyLeft = false;
-    if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') keyRight = false;
+    if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') left = false;
+    if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') right = false;
   });
-  setInterval(() => {
-    if (state !== 'playing') return;
-    if (keyLeft) player.x = clampX(player.x - 5);
-    if (keyRight) player.x = clampX(player.x + 5);
-  }, 16);
 
-  // ===== Buttons =====
-  ovBtn.onclick = () => { buildStage(stage); start(); };
-  newGameBtn.addEventListener('click', () => { stage = 1; buildStage(1); start(); });
-  pauseBtn.addEventListener('click', () => { if (state === 'ready') start(); else togglePause(); });
+  restartBtn.onclick = restart;
+  pauseBtn.onclick = togglePause;
+  upgradeBtn.onclick = upgrade;
+  ovBtn.onclick = startGame;
 
-  // ===== Boot =====
-  buildStage(1);
+  sizeCanvas();
+  buildStage();
   draw();
-  resizeCanvas();
-  setTimeout(resizeCanvas, 100);
+  requestAnimationFrame(loop);
+})();
 </script>
 </body>
 </html>
