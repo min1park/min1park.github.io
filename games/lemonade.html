@@ -172,7 +172,7 @@
     return { wants, got:0, patience, born:now(), color:palette[(Math.random()*palette.length)|0],
              x:W/2, slot:0, done:false, leaving:false, leaveAt:0, doneAt:0, bob:Math.random()*7 };
   }
-  function spawnGapForLevel(){ return Math.max(800, 2000 - level*200 + rnd(-300,300)); }
+  function spawnGapForLevel(){ return Math.max(2200, 4200 - level*250 + rnd(-400,400)); }
 
   // ===== Overlay helpers =====
   function openOverlay(html){ card.innerHTML=html; overlay.classList.add('show'); }
@@ -267,8 +267,11 @@
         fx.push({type:'text',x:c.x,y:H-200,text:'팁 +'+fmt(tip)+'💛',color:'#D4A843',life:46,vy:-.6});
       }
       fx.push({type:'text',x:c.x,y:H-180,text:'정확해요! ✓',color:'#2C7A4D',life:40,vy:-.7});
-      // freeze the day clock for the time spent making change (fairness)
-      dayStart += now() - change.startedAt;
+      // freeze the day clock AND every waiting customer's patience for the
+      // time spent making change (fairness — the game was effectively paused)
+      const frozen = now() - change.startedAt;
+      dayStart += frozen;
+      for(const other of customers){ if(!other.done && !other.leaving) other.born += frozen; }
       closeOverlay();
       change=null;
       state='playing'; lastTs=now();
@@ -440,8 +443,8 @@
     const f=dt/16.67;
     const elapsed=(ts-dayStart)/1000;
     const active=customers.filter(c=>!c.leaving&&!c.done).length;
-    const maxQ = 3+level;
-    if(ts-lastSpawn>spawnGap && active<Math.min(6,maxQ) && elapsed<DAY_SECONDS){
+    const maxQ = 2 + Math.floor(level/2);   // 2 early, up to ~4 at luxury
+    if(ts-lastSpawn>spawnGap && active<Math.min(4,maxQ) && elapsed<DAY_SECONDS){
       customers.push(makeCustomer()); lastSpawn=ts; spawnGap=spawnGapForLevel();
     }
     let slot=0;

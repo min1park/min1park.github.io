@@ -1,6 +1,6 @@
 // Cache-versioned service worker for the Classic Games PWA.
 // Bump the VERSION whenever assets change to invalidate old caches.
-const VERSION = 'v6';
+const VERSION = 'v7';
 const CACHE = `mp-classic-games-${VERSION}`;
 
 const ASSETS = [
