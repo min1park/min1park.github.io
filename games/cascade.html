@@ -32,6 +32,7 @@
   .stat.hp .value{color:var(--red)}
   .stat.mob .value{color:var(--blue)}
   .stat.time .value{color:var(--gold)}
+  .stat.life .value{color:var(--green)}
   .game-wrap{position:relative;flex:1;min-height:0;background:var(--panel);border:1px solid var(--ink);border-radius:22px;overflow:hidden;box-shadow:0 12px 32px rgba(10,10,10,.16);touch-action:none;user-select:none}
   canvas{display:block;width:100%;height:100%;}
   .overlay{position:absolute;inset:0;background:rgba(10,10,10,.76);display:flex;align-items:center;justify-content:center;padding:20px;z-index:10}
@@ -61,7 +62,7 @@
       <div class="stat"><div class="label">STAGE</div><div class="value" id="stageEl">1</div></div>
       <div class="stat mob"><div class="label">MOBS</div><div class="value" id="mobEl">0</div></div>
       <div class="stat hp"><div class="label">BASE</div><div class="value" id="hpEl">0</div></div>
-      <div class="stat"><div class="label">POWER</div><div class="value" id="powEl">1</div></div>
+      <div class="stat life"><div class="label">LIFE</div><div class="value" id="lifeEl">15</div></div>
       <div class="stat time"><div class="label">TIME</div><div class="value" id="timeEl">75</div></div>
     </div>
   </section>
@@ -99,7 +100,7 @@
   const stageEl = document.getElementById('stageEl');
   const mobEl = document.getElementById('mobEl');
   const hpEl = document.getElementById('hpEl');
-  const powEl = document.getElementById('powEl');
+  const lifeEl = document.getElementById('lifeEl');
   const timeEl = document.getElementById('timeEl');
   const overlay = document.getElementById('overlay');
   const ovEyebrow = document.getElementById('ovEyebrow');
@@ -127,8 +128,9 @@
   let state = 'ready';
   let stage = 1;
   let power = 1;
-  let fireRate = 140;       // ms between shots (was 82 — too frantic for kids)
-  let mobSpeed = 3.8;       // upward speed (was 5.1 — too fast to read)
+  let fireRate = 140;       // ms between shots
+  let mobSpeed = 2.4;       // upward speed — slower so game lasts longer
+  let life = 15;            // player HP — enemies reaching cannon damage this
   let cannon = { x: W/2, targetX: W/2, vx: 0 };
   let mobs = [];
   let enemies = [];
@@ -176,7 +178,8 @@
     stage = 1;
     power = 1;
     fireRate = 140;
-    mobSpeed = 3.8;
+    mobSpeed = 2.4;
+    life = 15;
     cannon.x = cannon.targetX = W/2;
     buildStage();
     show('READY','대포를 움직여<br>게이트를 맞춰라',
@@ -191,6 +194,7 @@
     fx = [];
     base.max = 420 + stage * 170;
     base.hp = base.max;
+    life = 15;
     nextGateSpawn = now() + 300;
     for (let i=0;i<2+Math.min(4, stage);i++) spawnEnemyPack(rnd(110, 270), 12 + stage*3, 0);
     updateUI();
@@ -389,7 +393,7 @@
     const ms = Math.max(390, 1050 - stage*70);
     if (ts - lastEnemy < ms) return;
     const n = 4 + Math.floor(stage*1.35);
-    spawnEnemyPack(105, n, 0.42);
+    spawnEnemyPack(105, n, 0.85);   // faster threat (was 0.42)
     lastEnemy = ts;
   }
 
@@ -435,7 +439,13 @@
     for (const e of enemies){
       if (!e.alive) continue;
       e.y += e.vy * f;
-      if (e.y > H-88) e.alive = false;
+      // Enemy reaches the cannon line -> damage player and remove the enemy
+      if (e.y > CANNON_Y - 30) {
+        e.alive = false;
+        life = Math.max(0, life - 1);
+        spark(e.x, CANNON_Y - 30, COLORS.red, 4);
+        if (navigator.vibrate) navigator.vibrate(20);
+      }
     }
 
     // 1:1 collision. Good enough for prototype scale.
@@ -464,6 +474,7 @@
 
     const elapsed = (ts - startAt) / 1000;
     if (base.hp <= 0) return win();
+    if (life <= 0) return lose('적이 대포까지 도달!');
     if (elapsed >= LIMIT) return lose('시간 초과');
     updateUI();
   }
@@ -472,7 +483,7 @@
     stageEl.textContent = stage;
     mobEl.textContent = mobs.length;
     hpEl.textContent = Math.ceil(base.hp);
-    powEl.textContent = power;
+    lifeEl.textContent = life;
     const t = state === 'playing' ? Math.max(0, Math.ceil(LIMIT - (now()-startAt)/1000)) : LIMIT;
     timeEl.textContent = t;
   }
