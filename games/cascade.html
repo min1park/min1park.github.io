@@ -328,7 +328,10 @@
       g.x = clamp(g.x, ROAD_L + 10, ROAD_R - 10 - g.w);
       if (g.shake > 0) g.shake -= f;
     }
-    gates = gates.filter(g => ts - g.born < g.ttl && g.alpha > 0.02);
+    // Only filter by TTL — alpha is for visual fade in/out, not lifetime.
+    // (Previous bug: filtering on alpha>0.02 removed newly-spawned gates whose
+    //  alpha was still 0 on their very first frame, so no gate ever appeared.)
+    gates = gates.filter(g => ts - g.born < g.ttl);
   }
 
   function fire(ts){
