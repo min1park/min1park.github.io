@@ -8,67 +8,53 @@
   :root{
     --bg:#FDF8EE; --panel:#FFFFFF; --ink:#0A0A0A; --sub:#666666;
     --line:#E8E0D2; --gold:#D4A843; --green:#2C7A4D; --green2:#1E5B38;
-    --red:#D34234; --blue:#1F6FEB; --cream:#FBF3DD; --lemon:#F2C94C;
+    --red:#D34234; --blue:#1F6FEB; --cream:#FBF3DD; --lemon:#F2C94C; --sky:#BFE3F2;
   }
   *{box-sizing:border-box;margin:0;padding:0}
-  html,body{min-height:100%;background:var(--bg);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans KR",sans-serif;color:var(--ink);}
-  body{display:flex;align-items:flex-start;justify-content:center;padding:14px 12px;-webkit-tap-highlight-color:transparent;}
-  .app{width:min(100%,440px);display:flex;flex-direction:column;gap:10px;}
-  .top{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:14px;box-shadow:0 8px 24px rgba(10,10,10,.08)}
-  .brand{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
-  .brand h1{font-size:21px;letter-spacing:-.04em;font-weight:950;line-height:1.05}
+  html,body{height:100%;overflow:hidden;background:var(--bg);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans KR",sans-serif;color:var(--ink);}
+  body{display:flex;align-items:center;justify-content:center;padding:12px;-webkit-tap-highlight-color:transparent;touch-action:none;}
+  .app{width:min(100%,440px);height:min(100vh,820px);display:flex;flex-direction:column;gap:8px;}
+  .top{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:11px 13px;box-shadow:0 8px 24px rgba(10,10,10,.08)}
+  .brand{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:9px}
+  .brand h1{font-size:19px;letter-spacing:-.04em;font-weight:950;line-height:1.05}
   .brand .tag{font-size:11px;color:var(--sub);font-weight:900;letter-spacing:.1em;text-transform:uppercase}
-  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
-  .stat{background:var(--cream);border:1px solid var(--line);border-radius:12px;padding:8px 4px;text-align:center}
-  .stat .label{font-size:10px;color:var(--sub);font-weight:850;letter-spacing:-.02em}
-  .stat .value{font-size:17px;font-weight:950;letter-spacing:-.03em;font-variant-numeric:tabular-nums;margin-top:1px}
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:5px}
+  .stat{background:var(--cream);border:1px solid var(--line);border-radius:11px;padding:7px 3px;text-align:center;min-width:0}
+  .stat .label{font-size:9.5px;color:var(--sub);font-weight:850;letter-spacing:-.02em;white-space:nowrap}
+  .stat .value{font-size:16px;font-weight:950;letter-spacing:-.03em;font-variant-numeric:tabular-nums;margin-top:1px}
   .stat.cash .value{color:var(--green)}
-  .stat.goal .value{color:var(--gold)}
-  .stat.day .value{color:var(--blue)}
+  .stat.stock .value{color:var(--blue)}
+  .stat.day .value{color:var(--gold)}
+  .stat.served .value{color:var(--ink)}
 
-  .panel{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:16px;box-shadow:0 8px 24px rgba(10,10,10,.06)}
-  .scene{background:linear-gradient(180deg,#BFE3F2 0%,#E9F4DA 70%);border-radius:14px;padding:16px;text-align:center;margin-bottom:14px;position:relative;overflow:hidden}
-  .weather-emoji{font-size:54px;line-height:1}
-  .weather-text{font-size:14px;font-weight:900;color:var(--ink);margin-top:4px}
-  .weather-sub{font-size:12px;color:var(--sub);font-weight:700;margin-top:2px}
-  .stand{font-size:30px;margin-top:6px}
+  .game-wrap{position:relative;flex:1;min-height:0;background:linear-gradient(180deg,#CFEAF6 0%,#E9F4DA 64%,#DCC9A0 64%,#D2BC8C 100%);border:1px solid var(--ink);border-radius:20px;overflow:hidden;box-shadow:0 12px 32px rgba(10,10,10,.16);touch-action:none;user-select:none}
+  canvas{display:block;width:100%;height:100%;}
 
-  h2{font-size:16px;font-weight:950;letter-spacing:-.03em;margin-bottom:12px;display:flex;align-items:center;gap:6px}
-  .row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
-  .row .rlabel{font-size:14px;font-weight:800}
-  .row .rsub{font-size:11px;color:var(--sub);font-weight:700}
-  .stepper{display:flex;align-items:center;gap:8px}
-  .stepper button{width:38px;height:38px;border-radius:11px;border:1px solid var(--ink);background:var(--panel);font-size:20px;font-weight:950;cursor:pointer;color:var(--ink);touch-action:manipulation}
-  .stepper button:active{background:var(--ink);color:#fff}
-  .stepper .num{min-width:62px;text-align:center;font-size:18px;font-weight:950;font-variant-numeric:tabular-nums}
-  .cost-line{font-size:12px;color:var(--sub);font-weight:800;text-align:right;margin-top:-6px;margin-bottom:12px}
-  .cost-line strong{color:var(--ink)}
+  .actionbar{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .act-btn{position:relative;appearance:none;border:1px solid var(--ink);background:var(--panel);border-radius:14px;padding:12px 8px;font-size:14px;font-weight:950;color:var(--ink);cursor:pointer;touch-action:manipulation;display:flex;flex-direction:column;align-items:center;gap:2px;line-height:1.1}
+  .act-btn:active{background:var(--ink);color:#fff}
+  .act-btn .sub{font-size:10.5px;font-weight:800;color:var(--sub)}
+  .act-btn:active .sub{color:#ddd}
+  .act-btn.make{border-color:var(--green);color:var(--green2)}
+  .act-btn.make:active{background:var(--green);color:#fff}
 
-  .btn-main{appearance:none;border:0;border-radius:14px;background:var(--ink);color:#fff;padding:14px 16px;width:100%;font-weight:950;font-size:16px;letter-spacing:-.02em;cursor:pointer;touch-action:manipulation}
-  .btn-main:active{transform:translateY(1px)}
-  .btn-main:disabled{opacity:.4;cursor:not-allowed}
-  .btn-ghost{appearance:none;border:1px solid var(--ink);background:transparent;border-radius:13px;padding:11px;width:100%;font-weight:900;font-size:13px;color:var(--ink);cursor:pointer;margin-top:8px}
-
-  .tip{background:var(--cream);border-radius:12px;padding:10px 12px;font-size:12px;line-height:1.5;color:#5A4A28;font-weight:700;margin-top:10px}
-  .tip b{color:var(--ink)}
-
-  /* Result */
-  .result-line{display:flex;justify-content:space-between;align-items:baseline;padding:9px 0;border-bottom:1px dashed var(--line);font-size:14px;font-weight:800}
+  .overlay{position:absolute;inset:0;background:rgba(10,10,10,.80);display:flex;align-items:center;justify-content:center;padding:18px;z-index:20}
+  .overlay.hidden{display:none}
+  .card{width:min(100%,335px);background:var(--panel);border-radius:22px;border:2px solid var(--gold);padding:22px 18px;text-align:center;box-shadow:0 18px 44px rgba(0,0,0,.3)}
+  .eyebrow{font-size:12px;font-weight:950;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin-bottom:8px}
+  .card h2{font-size:24px;letter-spacing:-.05em;line-height:1.1;margin-bottom:10px}
+  .card p{font-size:13.5px;line-height:1.6;color:var(--sub);font-weight:700;margin-bottom:14px}
+  .card p strong{color:var(--ink);font-weight:950}
+  .btn-main{appearance:none;border:0;border-radius:14px;background:var(--ink);color:#fff;padding:13px 16px;width:100%;font-weight:950;font-size:15px;cursor:pointer;touch-action:manipulation;position:relative;z-index:2}
+  .result-line{display:flex;justify-content:space-between;align-items:baseline;padding:8px 0;border-bottom:1px dashed var(--line);font-size:14px;font-weight:800}
   .result-line:last-of-type{border-bottom:0}
   .result-line .v{font-variant-numeric:tabular-nums;font-weight:950}
-  .result-line.profit .v{font-size:22px;color:var(--green)}
-  .result-line.loss .v{font-size:22px;color:var(--red)}
-  .sell-anim{font-size:13px;color:var(--sub);font-weight:800;text-align:center;margin:6px 0 12px;min-height:18px}
+  .result-line.big .v{font-size:22px}
+  .result-line.big.profit .v{color:var(--green)}
+  .result-line.big.loss .v{color:var(--red)}
 
-  .overlay{position:fixed;inset:0;background:rgba(10,10,10,.78);display:none;align-items:center;justify-content:center;padding:20px;z-index:20}
-  .overlay.show{display:flex}
-  .ocard{width:min(100%,330px);background:var(--panel);border-radius:22px;border:2px solid var(--gold);padding:24px 20px;text-align:center;box-shadow:0 18px 44px rgba(0,0,0,.3)}
-  .ocard .eyebrow{font-size:12px;font-weight:950;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin-bottom:8px}
-  .ocard h2{font-size:25px;letter-spacing:-.05em;justify-content:center;margin-bottom:10px}
-  .ocard p{font-size:14px;line-height:1.6;color:var(--sub);font-weight:700;margin-bottom:16px}
-  .ocard p strong{color:var(--ink);font-weight:950}
-  .footer{text-align:center;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--sub);font-weight:850;padding-top:2px}
-  .hidden{display:none!important}
+  .hint{font-size:11.5px;line-height:1.45;color:var(--sub);text-align:center;font-weight:700;padding:0 8px}
+  .footer{text-align:center;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--sub);font-weight:850}
 </style>
 </head>
 <body>
@@ -79,244 +65,401 @@
       <div class="tag">Game · No. 19</div>
     </div>
     <div class="stats">
-      <div class="stat day"><div class="label">날짜</div><div class="value" id="dayEl">1 / 7</div></div>
+      <div class="stat day"><div class="label">날</div><div class="value" id="dayEl">1/5</div></div>
       <div class="stat cash"><div class="label">내 돈</div><div class="value" id="cashEl">5,000</div></div>
-      <div class="stat goal"><div class="label">목표</div><div class="value" id="goalEl">40,000</div></div>
+      <div class="stat stock"><div class="label">재고🥤</div><div class="value" id="stockEl">5</div></div>
+      <div class="stat served"><div class="label">손님</div><div class="value" id="servedEl">0</div></div>
     </div>
   </section>
 
-  <!-- PLAN PHASE -->
-  <section class="panel" id="planPanel">
-    <div class="scene">
-      <div class="weather-emoji" id="wEmoji">☀️</div>
-      <div class="weather-text" id="wText">맑음</div>
-      <div class="weather-sub" id="wSub">더운 날엔 레모네이드가 잘 팔려요!</div>
-      <div class="stand">🍋🥤</div>
-    </div>
+  <main class="game-wrap" id="gameWrap">
+    <canvas id="game"></canvas>
 
-    <h2>🛒 오늘 장사 준비</h2>
-
-    <div class="row">
-      <div><div class="rlabel">레모네이드 만들기</div><div class="rsub">한 잔 재료비 <b id="unitCostLbl">700</b>원</div></div>
-      <div class="stepper">
-        <button id="cupMinus">−</button>
-        <div class="num"><span id="cupNum">10</span>잔</div>
-        <button id="cupPlus">+</button>
+    <!-- Start / Day intro / Result / End -->
+    <div class="overlay" id="overlay">
+      <div class="card" id="ovCard">
+        <div class="eyebrow" id="ovEyebrow">Ready</div>
+        <h2 id="ovTitle">레모네이드 가게</h2>
+        <div id="ovBody"></div>
+        <button class="btn-main" id="ovBtn" style="margin-top:6px;">시작</button>
       </div>
     </div>
-    <div class="cost-line">재료비 합계 <strong id="totalCost">7,000</strong>원</div>
+  </main>
 
-    <div class="row">
-      <div><div class="rlabel">한 잔 판매 가격</div><div class="rsub">너무 비싸면 손님이 줄어요</div></div>
-      <div class="stepper">
-        <button id="priceMinus">−</button>
-        <div class="num"><span id="priceNum">1,500</span></div>
-        <button id="pricePlus">+</button>
-      </div>
-    </div>
-
-    <button class="btn-main" id="openBtn">가게 열기 ▶</button>
-    <div class="tip" id="tipBox">💡 <b>이익</b> = 판 돈 − 재료비. 날씨와 가격을 보고 몇 잔 만들지 정해보세요!</div>
-  </section>
-
-  <!-- RESULT PHASE -->
-  <section class="panel hidden" id="resultPanel">
-    <h2 id="resultTitle">📊 오늘의 결산</h2>
-    <div class="sell-anim" id="sellAnim"></div>
-    <div class="result-line"><span>만든 레모네이드</span><span class="v" id="rMade">10잔</span></div>
-    <div class="result-line"><span>판매한 잔 수</span><span class="v" id="rSold">8잔</span></div>
-    <div class="result-line"><span>판 돈 (매출)</span><span class="v" id="rRevenue">+12,000원</span></div>
-    <div class="result-line"><span>재료비 (비용)</span><span class="v" id="rCost">−7,000원</span></div>
-    <div class="result-line profit" id="profitLine"><span>오늘 이익</span><span class="v" id="rProfit">+5,000원</span></div>
-    <button class="btn-main" id="nextBtn" style="margin-top:14px;">다음 날 ▶</button>
-  </section>
-
-  <div class="footer">— Min1 Park · 2026 —</div>
-</div>
-
-<!-- Start / End overlay -->
-<div class="overlay show" id="overlay">
-  <div class="ocard">
-    <div class="eyebrow" id="ovEyebrow">Ready</div>
-    <h2 id="ovTitle">레모네이드 가게</h2>
-    <p id="ovBody">
-      7일 동안 레모네이드를 팔아 <strong>목표 금액 40,000원</strong>을 모아보세요!<br><br>
-      매일 <strong>날씨</strong>를 보고 — 몇 잔 만들지, 얼마에 팔지 정합니다.<br>
-      더운 날은 많이 팔리고, 비 오는 날은 적게 팔려요.<br>
-      <strong>이익 = 판 돈 − 재료비</strong> 를 기억하세요!
-    </p>
-    <button class="btn-main" id="ovBtn">시작</button>
+  <div class="actionbar">
+    <button class="act-btn make" id="makeBtn">🍋 레모네이드 만들기<span class="sub">5잔 / 재료비 <span id="batchCost">3,500</span>원</span></button>
+    <button class="act-btn" id="serveBtn">🥤 손님에게 주기<span class="sub">맨 앞 손님에게 한 잔</span></button>
   </div>
+  <div class="hint" id="hintBar">맨 앞 손님이 원하는 잔 수만큼 "주기"를 누르세요 · 재고가 없으면 "만들기"</div>
+  <div class="footer">— Min1 Park · 2026 —</div>
 </div>
 
 <script>
 (() => {
   const $ = id => document.getElementById(id);
-  const dayEl = $('dayEl'), cashEl = $('cashEl'), goalEl = $('goalEl');
-  const wEmoji = $('wEmoji'), wText = $('wText'), wSub = $('wSub');
-  const cupNum = $('cupNum'), priceNum = $('priceNum');
-  const unitCostLbl = $('unitCostLbl'), totalCost = $('totalCost');
-  const planPanel = $('planPanel'), resultPanel = $('resultPanel');
-  const tipBox = $('tipBox');
-  const overlay = $('overlay'), ovEyebrow = $('ovEyebrow'), ovTitle = $('ovTitle'), ovBody = $('ovBody'), ovBtn = $('ovBtn');
+  const canvas = $('game'), ctx = canvas.getContext('2d'), wrap = $('gameWrap');
 
-  const TOTAL_DAYS = 7;
-  const GOAL = 40000;
-  const START_CASH = 5000;
+  // roundRect polyfill for older tablet browsers
+  if (!ctx.roundRect) {
+    CanvasRenderingContext2D.prototype.roundRect = function(x,y,w,h,r){
+      if (typeof r === 'number') r = {tl:r,tr:r,br:r,bl:r};
+      else if (Array.isArray(r)) r = {tl:r[0],tr:r[0],br:r[0],bl:r[0]};
+      this.beginPath();
+      this.moveTo(x+r.tl,y);
+      this.lineTo(x+w-r.tr,y); this.quadraticCurveTo(x+w,y,x+w,y+r.tr);
+      this.lineTo(x+w,y+h-r.br); this.quadraticCurveTo(x+w,y+h,x+w-r.br,y+h);
+      this.lineTo(x+r.bl,y+h); this.quadraticCurveTo(x,y+h,x,y+h-r.bl);
+      this.lineTo(x,y+r.tl); this.quadraticCurveTo(x,y,x+r.tl,y);
+      this.closePath();
+      return this;
+    };
+  }
+  const dayEl=$('dayEl'), cashEl=$('cashEl'), stockEl=$('stockEl'), servedEl=$('servedEl');
+  const overlay=$('overlay'), ovEyebrow=$('ovEyebrow'), ovTitle=$('ovTitle'), ovBody=$('ovBody'), ovBtn=$('ovBtn');
+  const makeBtn=$('makeBtn'), serveBtn=$('serveBtn'), batchCost=$('batchCost'), hintBar=$('hintBar');
 
-  // Weather: multiplier on demand, plus a base unit cost that can vary slightly
-  const WEATHERS = [
-    { key:'hot',   emoji:'🔥', text:'매우 더움', sub:'레모네이드가 불티나게 팔려요!', demand:1.7,  unit:750 },
-    { key:'sunny', emoji:'☀️', text:'맑음',      sub:'더운 날엔 레모네이드가 잘 팔려요!', demand:1.3,  unit:700 },
-    { key:'cloud', emoji:'⛅', text:'구름 조금',  sub:'평범한 날이에요.', demand:1.0,  unit:700 },
-    { key:'cool',  emoji:'🌥️', text:'쌀쌀함',    sub:'손님이 조금 적을 수 있어요.', demand:0.7,  unit:680 },
-    { key:'rain',  emoji:'🌧️', text:'비',        sub:'비 오는 날은 손님이 적어요.', demand:0.45, unit:650 },
-  ];
+  const W=420, H=600;
+  const TOTAL_DAYS=5, START_CASH=5000, GOAL=25000;
+  const DAY_SECONDS=45;            // each day lasts this long
+  const PRICE=1500;                // price per cup (fixed, kept simple)
+  const BATCH=5, BATCH_COST=3500;  // make 5 cups for 3,500 (700 each)
+  const UNIT_COST=BATCH_COST/BATCH;
 
-  let day, cash, cups, price, weather, weatherIdx;
+  // ===== State =====
+  let state='ready';               // ready | playing | result | over
+  let day=1, cash=START_CASH, stock=5, servedToday=0, servedTotal=0;
+  let revenueToday=0, costToday=0;
+  let customers=[];                // queue
+  let fx=[];
+  let dayStart=0, lastTs=0, lastSpawn=0, spawnGap=2000, raf=null;
+  let leftToday=0;                 // angry leavers
 
   function fmt(n){ return n.toLocaleString('ko-KR'); }
+  function now(){ return performance.now(); }
+  function rnd(a,b){ return a+Math.random()*(b-a); }
 
-  function pickWeather(){
-    // weighted toward middle weather
-    const r = Math.random();
-    if (r < 0.18) weatherIdx = 0;
-    else if (r < 0.45) weatherIdx = 1;
-    else if (r < 0.72) weatherIdx = 2;
-    else if (r < 0.88) weatherIdx = 3;
-    else weatherIdx = 4;
-    weather = WEATHERS[weatherIdx];
+  // ===== Customer =====
+  // patience in ms; wants 1-3 cups; y position in queue
+  function makeCustomer(){
+    const wants = 1 + (Math.random()<0.6?0 : Math.random()<0.7?1:2); // mostly 1, some 2-3
+    const patience = rnd(7000, 11000);
+    const palette = ['#E07A5F','#81B29A','#6A8CC7','#C9A227','#B5838D','#6D6875','#457B9D'];
+    return {
+      wants, got:0, patience, born:now(),
+      color: palette[(Math.random()*palette.length)|0],
+      x: W/2 + rnd(-12,12), targetSlot:0, happy:null, leaving:false, leaveAt:0,
+      bob: Math.random()*Math.PI*2,
+    };
   }
 
-  function newGame(){
-    day = 1; cash = START_CASH;
-    cups = 10; price = 1500;
-    startDay();
-    overlay.classList.remove('show');
+  function spawnGapForDay(){
+    // busier on later days
+    return Math.max(900, 2100 - day*180 + rnd(-250,250));
   }
 
+  // ===== Flow =====
+  function show(eyebrow,title,bodyHtml,btnText,btnFn){
+    overlay.classList.remove('hidden');
+    ovEyebrow.textContent=eyebrow; ovTitle.textContent=title;
+    ovBody.innerHTML=bodyHtml; ovBtn.textContent=btnText; ovBtn.onclick=btnFn;
+  }
+  function fullReset(){
+    day=1; cash=START_CASH; stock=5; servedTotal=0;
+    showStart();
+  }
+  function showStart(){
+    state='ready';
+    updateHUD();
+    show('Ready','레모네이드 가게',
+      `5일 동안 장사해서 <strong>목표 ${fmt(GOAL)}원</strong>을 모아요!<br><br>` +
+      `손님이 줄을 서요. 머리 위 <strong>🥤숫자</strong>가 원하는 잔 수예요.<br>` +
+      `<strong>주기</strong> 버튼으로 한 잔씩 건네고, 재고가 없으면 <strong>만들기</strong>(5잔 ${fmt(BATCH_COST)}원).<br>` +
+      `너무 오래 기다리면 손님이 화나서 가버려요! 😡<br><br>` +
+      `<strong>이익 = 번 돈 − 재료비</strong>`,
+      '시작', startDay);
+  }
   function startDay(){
-    pickWeather();
-    // default suggestion adapts to weather a little (kids can still change)
-    cups = Math.max(5, Math.round(10 * weather.demand));
-    price = 1500;
-    // affordability: clamp cups to what cash allows
-    clampCups();
-    renderPlan();
-    planPanel.classList.remove('hidden');
-    resultPanel.classList.add('hidden');
+    state='playing';
+    overlay.classList.add('hidden');
+    customers=[]; fx=[];
+    servedToday=0; revenueToday=0; costToday=0; leftToday=0;
+    dayStart=now(); lastTs=now(); lastSpawn=0; spawnGap=spawnGapForDay();
+    if(!raf) raf=requestAnimationFrame(loop);
+    updateHUD();
   }
-
-  function unitCost(){ return weather.unit; }
-  function clampCups(){
-    const maxByCash = Math.floor(cash / unitCost());
-    cups = Math.min(cups, Math.max(0, maxByCash));
-    if (cups < 0) cups = 0;
+  function endDay(){
+    state='result';
+    const profit = revenueToday - costToday;
+    show('Day '+day+' 결산', day+'일차 마감 📊',
+      `<div class="result-line"><span>판 잔 수</span><span class="v">${servedToday}잔</span></div>` +
+      `<div class="result-line"><span>번 돈 (매출)</span><span class="v">+${fmt(revenueToday)}원</span></div>` +
+      `<div class="result-line"><span>재료비 (비용)</span><span class="v">−${fmt(costToday)}원</span></div>` +
+      `<div class="result-line big ${profit>=0?'profit':'loss'}"><span>오늘 이익</span><span class="v">${profit>=0?'+':'−'}${fmt(Math.abs(profit))}원</span></div>` +
+      (leftToday>0?`<p style="margin:10px 0 0;color:var(--red);font-weight:800;font-size:12.5px;">😡 ${leftToday}명이 오래 기다리다 떠났어요</p>`:'') +
+      `<p style="margin:12px 0 0;font-weight:850;">현재 내 돈 <strong>${fmt(cash)}원</strong></p>`,
+      day>=TOTAL_DAYS?'결과 보기':'다음 날 ▶',
+      day>=TOTAL_DAYS?endGame:nextDay);
   }
-
-  function renderPlan(){
-    dayEl.textContent = day + ' / ' + TOTAL_DAYS;
-    cashEl.textContent = fmt(cash);
-    goalEl.textContent = fmt(GOAL);
-    wEmoji.textContent = weather.emoji;
-    wText.textContent = weather.text;
-    wSub.textContent = weather.sub;
-    unitCostLbl.textContent = fmt(unitCost());
-    cupNum.textContent = cups;
-    priceNum.textContent = fmt(price);
-    totalCost.textContent = fmt(cups * unitCost());
-    // dynamic tip
-    if (price > 2500) tipBox.innerHTML = '💡 가격이 <b>조금 비싼</b> 편이에요. 손님이 줄 수 있어요.';
-    else if (price < 1000) tipBox.innerHTML = '💡 가격이 <b>싸서</b> 많이 팔리지만 한 잔 이익이 적어요.';
-    else tipBox.innerHTML = '💡 <b>이익</b> = 판 돈 − 재료비. 날씨를 보고 몇 잔 만들지 정해요!';
-    $('openBtn').disabled = (cups <= 0);
-  }
-
-  // ===== Demand model =====
-  // Base customers depend on weather. Higher price reduces how many actually buy.
-  function simulateSales(){
-    // "ideal" price where most people buy is ~1500. Demand falls as price rises.
-    const baseCustomers = 12 * weather.demand;            // potential buyers
-    // price sensitivity: at 1500 -> factor ~1.0, at 3000 -> ~0.4, at 800 -> ~1.25(capped)
-    let priceFactor = 1.6 - (price / 1500) * 0.6;
-    priceFactor = Math.max(0.1, Math.min(1.3, priceFactor));
-    let wanted = baseCustomers * priceFactor;
-    // small randomness
-    wanted *= (0.85 + Math.random() * 0.3);
-    let sold = Math.min(cups, Math.round(wanted));
-    sold = Math.max(0, sold);
-    return sold;
-  }
-
-  function openShop(){
-    if (cups <= 0) return;
-    const spent = cups * unitCost();
-    cash -= spent;                       // pay for ingredients now
-    const sold = simulateSales();
-    const revenue = sold * price;
-    cash += revenue;
-    const profit = revenue - spent;
-
-    // fill result panel
-    $('rMade').textContent = cups + '잔';
-    $('rSold').textContent = sold + '잔';
-    $('rRevenue').textContent = '+' + fmt(revenue) + '원';
-    $('rCost').textContent = '−' + fmt(spent) + '원';
-    const profitLine = $('profitLine');
-    $('rProfit').textContent = (profit >= 0 ? '+' : '−') + fmt(Math.abs(profit)) + '원';
-    profitLine.className = 'result-line ' + (profit >= 0 ? 'profit' : 'loss');
-
-    // commentary
-    let title, anim;
-    const sellRate = cups > 0 ? sold / cups : 0;
-    if (sold === 0) { title = '📊 오늘의 결산'; anim = '오늘은 손님이 없었어요… 😢'; }
-    else if (sellRate >= 0.99) { title = '📊 완판! 🎉'; anim = '만든 레모네이드를 다 팔았어요! 더 만들 걸 그랬나요?'; }
-    else if (sellRate >= 0.6) { title = '📊 오늘의 결산'; anim = '꽤 잘 팔았어요! 👍'; }
-    else { title = '📊 오늘의 결산'; anim = '레모네이드가 많이 남았어요. 다음엔 적게 만들어볼까요?'; }
-    $('resultTitle').textContent = title;
-    $('sellAnim').textContent = anim;
-
-    cashEl.textContent = fmt(cash);
-    planPanel.classList.add('hidden');
-    resultPanel.classList.remove('hidden');
-  }
-
-  function nextDay(){
-    if (day >= TOTAL_DAYS) return endGame();
-    day++;
-    startDay();
-  }
-
+  function nextDay(){ day++; startDay(); }
   function endGame(){
-    const reached = cash >= GOAL;
-    overlay.classList.add('show');
-    ovEyebrow.textContent = reached ? 'Success' : 'Game Over';
-    ovTitle.textContent = reached ? '🎉 목표 달성!' : '아쉬워요!';
-    if (reached) {
-      ovBody.innerHTML = `7일 동안 <strong>${fmt(cash)}원</strong>을 모았어요!<br>목표 <strong>${fmt(GOAL)}원</strong>을 넘었습니다. 멋진 사장님이네요! 👏`;
-    } else {
-      ovBody.innerHTML = `7일 동안 <strong>${fmt(cash)}원</strong>을 모았어요.<br>목표는 <strong>${fmt(GOAL)}원</strong>이었어요.<br>날씨를 잘 보고 가격을 정하면 더 잘 모을 수 있어요!`;
-    }
-    ovBtn.textContent = '다시 하기';
-    ovBtn.onclick = newGame;
+    state='over';
+    const reached = cash>=GOAL;
+    show(reached?'Success':'Game Over', reached?'🎉 목표 달성!':'아쉬워요!',
+      `5일 동안 손님 <strong>${servedTotal}명</strong>에게 팔아<br><strong>${fmt(cash)}원</strong>을 모았어요!<br>` +
+      (reached?`목표 ${fmt(GOAL)}원을 넘었어요. 멋진 사장님! 👏`
+              :`목표는 ${fmt(GOAL)}원이었어요.<br>재고를 미리 넉넉히 만들면 손님을 더 빨리 받을 수 있어요!`),
+      '다시 하기', fullReset);
   }
 
-  // ===== Steppers =====
-  $('cupPlus').onclick = () => { const max = Math.floor(cash / unitCost()); cups = Math.min(max, cups + 5); renderPlan(); };
-  $('cupMinus').onclick = () => { cups = Math.max(0, cups - 5); renderPlan(); };
-  $('pricePlus').onclick = () => { price = Math.min(4000, price + 250); renderPlan(); };
-  $('priceMinus').onclick = () => { price = Math.max(500, price - 250); renderPlan(); };
-  $('openBtn').onclick = openShop;
-  $('nextBtn').onclick = nextDay;
-  ovBtn.onclick = newGame;
+  // ===== Actions =====
+  function makeBatch(){
+    if(state!=='playing') return;
+    if(cash < BATCH_COST){ flashHint('돈이 부족해요! 손님을 받아 돈을 버세요.', true); return; }
+    cash -= BATCH_COST; costToday += BATCH_COST; stock += BATCH;
+    fx.push({type:'text', x:W/2, y:H-150, text:'+'+BATCH+'잔 🍋', color:'#2C7A4D', life:42, vy:-.7});
+    if(navigator.vibrate) navigator.vibrate(12);
+    updateHUD();
+  }
+  function serveFront(){
+    if(state!=='playing') return;
+    const c = customers.find(x=>!x.leaving && x.happy===null);
+    if(!c){ flashHint('손님이 없어요!', false); return; }
+    if(stock<=0){ flashHint('재고가 없어요! "만들기"를 누르세요 🍋', true); return; }
+    stock--; c.got++; revenueToday += PRICE; cash += PRICE;
+    fx.push({type:'text', x:c.x, y:queueY(0)-40, text:'+'+fmt(PRICE), color:'#2C7A4D', life:34, vy:-.7});
+    if(c.got>=c.wants){
+      c.happy=true; c.happyAt=now();
+      servedToday++; servedTotal++;
+      // tip chance if served fast
+      const waited = now()-c.born;
+      if(waited < c.patience*0.4 && Math.random()<0.4){
+        const tip=500; cash+=tip; revenueToday+=tip;
+        fx.push({type:'text', x:c.x, y:queueY(0)-64, text:'팁 +'+fmt(tip)+' 💛', color:'#D4A843', life:44, vy:-.6});
+      }
+      if(navigator.vibrate) navigator.vibrate(20);
+    }
+    updateHUD();
+  }
+
+  function flashHint(msg, warn){
+    hintBar.textContent = msg;
+    hintBar.style.color = warn ? 'var(--red)' : 'var(--sub)';
+    hintBar.style.fontWeight = warn ? '900' : '700';
+    clearTimeout(flashHint._t);
+    flashHint._t = setTimeout(()=>{
+      hintBar.textContent='맨 앞 손님이 원하는 잔 수만큼 "주기"를 누르세요 · 재고가 없으면 "만들기"';
+      hintBar.style.color='var(--sub)'; hintBar.style.fontWeight='700';
+    }, 1800);
+  }
+
+  function updateHUD(){
+    dayEl.textContent = day+'/'+TOTAL_DAYS;
+    cashEl.textContent = fmt(cash);
+    stockEl.textContent = stock;
+    servedEl.textContent = servedToday;
+    batchCost.textContent = fmt(BATCH_COST);
+  }
+
+  // ===== Layout =====
+  function queueY(slot){ return H - 120 - slot*0; } // single front position emphasis
+  // We render a horizontal-ish queue near bottom; front customer is biggest.
+
+  // ===== Loop =====
+  function loop(ts){
+    const dt = Math.min(50, ts-lastTs||16.67); lastTs=ts;
+    if(state==='playing') update(ts, dt);
+    draw(ts);
+    raf=requestAnimationFrame(loop);
+  }
+
+  function update(ts, dt){
+    const f = dt/16.67;
+    const elapsed = (ts-dayStart)/1000;
+
+    // spawn customers
+    const activeCount = customers.filter(c=>!c.leaving && c.happy===null).length;
+    if(ts-lastSpawn > spawnGap && activeCount < 5 && elapsed < DAY_SECONDS){
+      customers.push(makeCustomer());
+      lastSpawn = ts;
+      spawnGap = spawnGapForDay();
+    }
+
+    // update customers
+    let slot=0;
+    for(const c of customers){
+      c.bob += 0.05*f;
+      if(c.happy===null && !c.leaving){
+        // assign queue slot (front = 0)
+        c.targetSlot = slot++;
+        // patience countdown only for those near front (waiting actively)
+        if(ts - c.born > c.patience){
+          c.leaving=true; c.leaveAt=ts; c.happy=false;
+          leftToday++;
+          fx.push({type:'text', x:c.x, y:queueY(0)-40, text:'😡 떠남', color:'#D34234', life:40, vy:-.6});
+        }
+      }
+      // smooth x toward slot target position
+      const tx = frontX(c.targetSlot);
+      c.x += (tx - c.x)*0.12*f;
+    }
+
+    // remove served/left after a beat
+    customers = customers.filter(c=>{
+      if(c.happy===true && now()-c.happyAt>500) return false;
+      if(c.leaving && ts-c.leaveAt>500) return false;
+      return true;
+    });
+
+    // fx
+    for(const p of fx){ p.life-=f; if(p.type==='text') p.y+=p.vy*f; }
+    fx = fx.filter(p=>p.life>0);
+
+    // end day when time up and queue cleared of active waiters
+    if(elapsed >= DAY_SECONDS){
+      hintBar.textContent='마감 시간! 남은 손님을 받고 정리하는 중…';
+      const stillWaiting = customers.some(c=>c.happy===null && !c.leaving);
+      if(!stillWaiting) endDay();
+    }
+    updateHUD();
+  }
+
+  function frontX(slot){
+    // queue lined up from left, front customer at center-left near counter
+    return 70 + slot*68;
+  }
+
+  // ===== Draw =====
+  function clearBacking(){ ctx.save(); ctx.setTransform(1,0,0,1,0,0); ctx.clearRect(0,0,canvas.width,canvas.height); ctx.restore(); }
+  function draw(ts){
+    clearBacking();
+    // sky/ground gradient is on the wrap CSS; draw scene elements
+    drawScene();
+    // customers (draw back-to-front: higher slot behind)
+    const sorted = customers.slice().sort((a,b)=>b.targetSlot-a.targetSlot);
+    for(const c of sorted) drawCustomer(c, ts);
+    drawStand();
+    // fx
+    for(const p of fx){
+      if(p.type==='text'){
+        const a=Math.max(0,Math.min(1,p.life/42));
+        ctx.globalAlpha=a; ctx.fillStyle=p.color;
+        ctx.font='950 16px system-ui'; ctx.textAlign='center'; ctx.textBaseline='middle';
+        ctx.lineWidth=3.5; ctx.strokeStyle='#fff'; ctx.strokeText(p.text,p.x,p.y); ctx.fillText(p.text,p.x,p.y);
+        ctx.globalAlpha=1;
+      }
+    }
+    // day timer bar
+    if(state==='playing'){
+      const elapsed=(ts-dayStart)/1000;
+      const ratio=Math.max(0,1-elapsed/DAY_SECONDS);
+      ctx.fillStyle='rgba(10,10,10,.12)'; ctx.fillRect(12,12,W-24,8);
+      ctx.fillStyle='#D4A843'; ctx.fillRect(12,12,(W-24)*ratio,8);
+      ctx.fillStyle='#0A0A0A'; ctx.font='900 12px system-ui'; ctx.textAlign='right'; ctx.textBaseline='top';
+      ctx.fillText('남은 시간 '+Math.ceil(Math.max(0,DAY_SECONDS-elapsed))+'초', W-14, 24);
+    }
+  }
+
+  function drawScene(){
+    // sun
+    ctx.fillStyle='#F2C94C'; ctx.beginPath(); ctx.arc(W-58, 70, 26, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle='rgba(242,201,76,.35)'; ctx.beginPath(); ctx.arc(W-58, 70, 36, 0, Math.PI*2); ctx.fill();
+  }
+
+  function drawCustomer(c, ts){
+    const baseY = H - 150;
+    const bob = Math.sin(c.bob)*2;
+    const x=c.x, y=baseY+bob;
+    const front = c.targetSlot===0;
+    const scale = front?1.0:0.82;
+    ctx.save();
+    ctx.translate(x,y); ctx.scale(scale,scale);
+    // body
+    ctx.fillStyle = c.leaving? '#9aa0a6' : c.color;
+    ctx.beginPath(); ctx.roundRect(-15, 6, 30, 34, 8); ctx.fill();
+    // head
+    ctx.fillStyle = c.leaving? '#b8bcc0' : '#F2D5B8';
+    ctx.beginPath(); ctx.arc(0,-8,14,0,Math.PI*2); ctx.fill();
+    // face
+    if(c.happy===true){
+      ctx.strokeStyle='#0A0A0A'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(0,-6,6,0.1*Math.PI,0.9*Math.PI); ctx.stroke();
+      ctx.fillStyle='#0A0A0A'; ctx.beginPath(); ctx.arc(-5,-11,1.6,0,7); ctx.arc(5,-11,1.6,0,7); ctx.fill();
+    } else if(c.leaving){
+      ctx.strokeStyle='#D34234'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(0,-4,5,1.1*Math.PI,1.9*Math.PI); ctx.stroke();
+    } else {
+      ctx.fillStyle='#0A0A0A'; ctx.beginPath(); ctx.arc(-5,-10,1.8,0,7); ctx.arc(5,-10,1.8,0,7); ctx.fill();
+      ctx.strokeStyle='#0A0A0A'; ctx.lineWidth=1.8; ctx.beginPath(); ctx.moveTo(-4,-3); ctx.lineTo(4,-3); ctx.stroke();
+    }
+    ctx.restore();
+
+    // speech bubble with wanted cups (only for waiting customers)
+    if(c.happy===null && !c.leaving){
+      const bx=x, by=y-46;
+      const remaining = c.wants - c.got;
+      ctx.fillStyle='#fff'; ctx.strokeStyle='#0A0A0A'; ctx.lineWidth=2;
+      ctx.beginPath(); ctx.roundRect(bx-26, by-18, 52, 30, 9); ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(bx-5,by+11); ctx.lineTo(bx+5,by+11); ctx.lineTo(bx,by+19); ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.fillStyle='#0A0A0A'; ctx.font='950 17px system-ui'; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText('🥤'+remaining, bx, by-3);
+      // patience bar
+      const pr = Math.max(0, 1-(now()-c.born)/c.patience);
+      ctx.fillStyle='rgba(10,10,10,.15)'; ctx.fillRect(bx-22, by+14, 44, 4);
+      ctx.fillStyle = pr>0.5?'#2C7A4D':pr>0.25?'#D4A843':'#D34234';
+      ctx.fillRect(bx-22, by+14, 44*pr, 4);
+    }
+  }
+
+  function drawStand(){
+    // counter at bottom
+    const cy=H-78;
+    ctx.fillStyle='#C9824B'; ctx.fillRect(0,cy,W,78);
+    ctx.fillStyle='#A86534'; ctx.fillRect(0,cy,W,8);
+    // stand sign
+    ctx.fillStyle='#FFF8E6'; ctx.strokeStyle='#A86534'; ctx.lineWidth=3;
+    ctx.beginPath(); ctx.roundRect(W/2-70, cy+16, 140, 44, 10); ctx.fill(); ctx.stroke();
+    ctx.fillStyle='#D4A843'; ctx.font='950 17px system-ui'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText('🍋 LEMONADE', W/2, cy+30);
+    ctx.fillStyle='#0A0A0A'; ctx.font='900 14px system-ui';
+    ctx.fillText('한 잔 '+fmt(PRICE)+'원', W/2, cy+48);
+    // stock cups on counter (up to 8 shown)
+    const showN=Math.min(8, stock);
+    for(let i=0;i<showN;i++){
+      const cx=18+i*20;
+      ctx.fillStyle='#F2C94C'; ctx.beginPath(); ctx.roundRect(cx, cy-20, 14, 18, 3); ctx.fill();
+      ctx.fillStyle='#fff'; ctx.fillRect(cx+2, cy-20, 10, 3);
+    }
+    if(stock>8){ ctx.fillStyle='#0A0A0A'; ctx.font='900 12px system-ui'; ctx.textAlign='left'; ctx.fillText('+'+(stock-8), 18+8*20, cy-12); }
+  }
+
+  // ===== Input =====
+  function sizeCanvas(){
+    const r=wrap.getBoundingClientRect();
+    const dpr=Math.max(1,window.devicePixelRatio||1);
+    const scale=Math.min(r.width/W, r.height/H);
+    canvas.width=Math.round(r.width*dpr); canvas.height=Math.round(r.height*dpr);
+    ctx.setTransform(dpr*scale,0,0,dpr*scale,(r.width-W*scale)*dpr/2,(r.height-H*scale)*dpr/2);
+  }
+  window.addEventListener('resize', sizeCanvas);
+
+  // Tapping a waiting customer also serves them (intuitive)
+  function wrapTap(e){
+    if(state!=='playing') return;
+    serveFront();
+    if(e.cancelable) e.preventDefault();
+  }
+  wrap.addEventListener('pointerdown', wrapTap);
+
+  makeBtn.addEventListener('click', makeBatch);
+  serveBtn.addEventListener('click', serveFront);
+  window.addEventListener('keydown', e=>{
+    if(e.key==='m'||e.key==='M'){ makeBatch(); }
+    if(e.key===' '||e.key==='Enter'){ if(state==='ready'){startDay();e.preventDefault();} else serveFront(); }
+  });
 
   // ===== Boot =====
-  newGame();
-  overlay.classList.add('show');
-  ovEyebrow.textContent = 'Ready';
-  ovTitle.textContent = '레모네이드 가게';
-  ovBody.innerHTML = '7일 동안 레모네이드를 팔아 <strong>목표 40,000원</strong>을 모아보세요!<br><br>매일 <strong>날씨</strong>를 보고 몇 잔 만들지, 얼마에 팔지 정합니다.<br>더운 날은 많이 팔리고, 비 오는 날은 적게 팔려요.<br><strong>이익 = 판 돈 − 재료비</strong>!';
-  ovBtn.textContent = '시작';
+  sizeCanvas();
+  showStart();
+  draw(now());
+  requestAnimationFrame(loop);
 })();
 </script>
 </body>
