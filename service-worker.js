@@ -1,6 +1,6 @@
 // Cache-versioned service worker for the Classic Games PWA.
 // Bump the VERSION whenever assets change to invalidate old caches.
-const VERSION = 'v2';
+const VERSION = 'v3';
 const CACHE = `mp-classic-games-${VERSION}`;
 
 const ASSETS = [
@@ -26,7 +26,8 @@ const ASSETS = [
   '/games/janggi.html',
   '/games/cascade.html',
   '/games/othello.html',
-  '/games/math-gates.html'
+  '/games/math-gates.html',
+  '/games/math-defender.html'
 ];
 
 // Pre-cache all known assets on install.

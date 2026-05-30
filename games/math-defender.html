@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>Math Defender · 수학 디펜더</title>
+<style>
+  :root{
+    --bg:#FDF8EE; --panel:#FFFFFF; --ink:#0A0A0A; --sub:#666666;
+    --line:#E8E0D2; --gold:#D4A843; --blue:#1F6FEB; --blue2:#0F4EB3;
+    --red:#D34234; --red2:#9D251B; --green:#2C7A4D; --green2:#1E5B38;
+    --space:#0A1428;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;overflow:hidden;background:var(--bg);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans KR",sans-serif;color:var(--ink);}
+  body{display:flex;align-items:center;justify-content:center;padding:12px;-webkit-tap-highlight-color:transparent;touch-action:none;}
+  .app{width:min(100%,440px);height:min(100vh,820px);display:flex;flex-direction:column;gap:8px;}
+  .top{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:12px 14px;box-shadow:0 8px 24px rgba(10,10,10,.08)}
+  .brand{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+  .brand h1{font-size:22px;letter-spacing:-.05em;font-weight:950;line-height:1.05}
+  .brand .tag{font-size:11px;color:var(--sub);font-weight:900;letter-spacing:.12em;text-transform:uppercase}
+  .diff-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;margin-bottom:8px}
+  .diff-btn{padding:7px 0;background:var(--panel);border:1px solid var(--line);border-radius:10px;font-size:12px;font-weight:900;color:var(--sub);cursor:pointer;letter-spacing:-.02em}
+  .diff-btn.active{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .stats{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+  .stat{background:#F7EEDB;border:1px solid var(--line);border-radius:12px;padding:7px 3px;text-align:center;min-width:0}
+  .stat .label{font-size:10px;color:var(--sub);font-weight:850;letter-spacing:-.03em;white-space:nowrap}
+  .stat .value{font-size:17px;font-weight:950;letter-spacing:-.04em;font-variant-numeric:tabular-nums;margin-top:1px}
+  .stat.score .value{color:var(--ink)}
+  .stat.life .value{color:var(--red)}
+  .stat.bomb .value{color:var(--gold)}
+  .stat.wave .value{color:var(--blue)}
+  .stat.combo .value{color:var(--green)}
+
+  .game-wrap{position:relative;flex:1;min-height:0;background:var(--space);border:1px solid var(--ink);border-radius:22px;overflow:hidden;box-shadow:0 12px 32px rgba(10,10,10,.16);touch-action:none;user-select:none}
+  canvas{display:block;width:100%;height:100%;}
+
+  .bomb-btn{position:absolute;right:14px;bottom:14px;width:64px;height:64px;border-radius:50%;border:3px solid var(--gold);background:rgba(212,168,67,.18);color:#fff;font-size:22px;font-weight:950;display:flex;align-items:center;justify-content:center;cursor:pointer;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);z-index:5;touch-action:manipulation;flex-direction:column;line-height:1.05}
+  .bomb-btn .ico{font-size:22px}
+  .bomb-btn .cnt{font-size:14px;color:var(--gold)}
+  .bomb-btn:active{transform:scale(0.95)}
+  .bomb-btn.disabled{opacity:0.35;cursor:not-allowed}
+
+  .overlay{position:absolute;inset:0;background:rgba(10,10,10,.84);display:flex;align-items:center;justify-content:center;padding:18px;z-index:10}
+  .overlay.hidden{display:none}
+  .card{width:min(100%,340px);background:var(--panel);border-radius:22px;border:2px solid var(--gold);padding:22px 18px;text-align:center;box-shadow:0 18px 44px rgba(0,0,0,.32)}
+  .eyebrow{font-size:12px;font-weight:950;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin-bottom:8px}
+  .card h2{font-size:26px;letter-spacing:-.06em;line-height:1.05;margin-bottom:10px}
+  .card p{font-size:14px;line-height:1.6;color:var(--sub);font-weight:650;margin-bottom:14px}
+  .card strong{color:var(--ink);font-weight:950}
+  .btn-main{appearance:none;border:0;border-radius:14px;background:var(--ink);color:#fff;padding:13px 16px;width:100%;font-weight:950;font-size:15px;cursor:pointer;touch-action:manipulation;position:relative;z-index:2}
+
+  /* Math modal */
+  .math-card{width:min(100%,340px);background:var(--panel);border-radius:22px;border:2px solid var(--blue);padding:22px 18px;text-align:center;box-shadow:0 18px 44px rgba(0,0,0,.32)}
+  .math-card .label{font-size:11px;font-weight:950;letter-spacing:.14em;text-transform:uppercase;color:var(--blue);margin-bottom:8px}
+  .math-card .problem{font-size:36px;font-weight:950;letter-spacing:-.04em;margin-bottom:12px;font-variant-numeric:tabular-nums}
+  .math-card .input{font-size:32px;font-weight:950;font-variant-numeric:tabular-nums;background:#F2F4F8;border-radius:12px;padding:10px;margin-bottom:12px;min-height:62px;display:flex;align-items:center;justify-content:center;color:var(--ink)}
+  .math-card .input.correct{background:#D8F0E2;color:var(--green2)}
+  .math-card .input.wrong{background:#F8DEDA;color:var(--red2)}
+  .numpad{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+  .key{appearance:none;border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:14px 0;font-size:20px;font-weight:950;color:var(--ink);cursor:pointer;touch-action:manipulation}
+  .key:active{background:var(--ink);color:#fff}
+  .key.action{background:var(--blue);color:#fff;border-color:var(--blue)}
+  .key.action:active{background:var(--blue2)}
+  .key.del{background:#F2F4F8;color:var(--sub)}
+
+  .controls{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .btn{appearance:none;border:1px solid var(--ink);background:var(--panel);border-radius:14px;padding:11px 8px;font-size:13px;font-weight:900;color:var(--ink);cursor:pointer}
+  .btn:active{background:var(--ink);color:#fff}
+  .hint{font-size:12px;line-height:1.45;color:var(--sub);text-align:center;font-weight:650;padding:0 10px 4px}
+  .footer{text-align:center;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--sub);font-weight:850;padding-top:2px}
+</style>
+</head>
+<body>
+<div class="app">
+  <section class="top">
+    <div class="brand">
+      <h1>수학 디펜더 · Math Defender</h1>
+      <div class="tag">Game · No. 18</div>
+    </div>
+    <div class="diff-row">
+      <button class="diff-btn" data-diff="easy">쉬움 (1~2학년)</button>
+      <button class="diff-btn active" data-diff="medium">보통 (3~4학년)</button>
+      <button class="diff-btn" data-diff="hard">어려움 (5~6학년)</button>
+    </div>
+    <div class="stats">
+      <div class="stat wave"><div class="label">WAVE</div><div class="value" id="waveEl">1</div></div>
+      <div class="stat score"><div class="label">점수</div><div class="value" id="scoreEl">0</div></div>
+      <div class="stat combo"><div class="label">정답</div><div class="value" id="comboEl">0</div></div>
+      <div class="stat life"><div class="label">생명</div><div class="value" id="lifeEl">5</div></div>
+      <div class="stat bomb"><div class="label">폭탄</div><div class="value" id="bombEl">0</div></div>
+    </div>
+  </section>
+
+  <main class="game-wrap" id="gameWrap">
+    <canvas id="game"></canvas>
+    <button class="bomb-btn disabled" id="bombBtn">
+      <span class="ico">💣</span>
+      <span class="cnt" id="bombCnt">0</span>
+    </button>
+
+    <!-- Start / Game Over overlay -->
+    <div class="overlay" id="overlay">
+      <div class="card">
+        <div class="eyebrow" id="ovEyebrow">READY</div>
+        <h2 id="ovTitle">수학 디펜더</h2>
+        <p id="ovBody">
+          적이 위에서 내려옵니다. <strong>화면 좌우 드래그</strong>로 우주선을 움직여요.<br>
+          10마리 잡을 때마다 <strong>수학 문제</strong>가 나옵니다 — 맞히면 <strong>💣 폭탄</strong>을 얻어요.<br>
+          폭탄 버튼을 누르면 <strong>화면의 적이 모두 사라집니다!</strong>
+        </p>
+        <button class="btn-main" id="ovBtn">시작</button>
+      </div>
+    </div>
+
+    <!-- Math problem modal -->
+    <div class="overlay hidden" id="mathOverlay">
+      <div class="math-card">
+        <div class="label">수학 문제 · 맞히면 💣 폭탄</div>
+        <div class="problem" id="mathProblem">8 × 8 = ?</div>
+        <div class="input" id="mathInput">_</div>
+        <div class="numpad">
+          <button class="key" data-k="7">7</button>
+          <button class="key" data-k="8">8</button>
+          <button class="key" data-k="9">9</button>
+          <button class="key" data-k="4">4</button>
+          <button class="key" data-k="5">5</button>
+          <button class="key" data-k="6">6</button>
+          <button class="key" data-k="1">1</button>
+          <button class="key" data-k="2">2</button>
+          <button class="key" data-k="3">3</button>
+          <button class="key del" data-k="del">⌫</button>
+          <button class="key" data-k="0">0</button>
+          <button class="key action" data-k="ok">정답!</button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <div class="controls">
+    <button class="btn" id="restartBtn">처음부터</button>
+    <button class="btn" id="pauseBtn">일시정지</button>
+  </div>
+  <div class="hint">화면 드래그 = 우주선 이동 · 폭탄 버튼 누르면 화면 적 모두 제거 · PC는 ←/→ 키</div>
+  <div class="footer">— Min1 Park · 2026 —</div>
+</div>
+
+<script>
+(() => {
+  const canvas = document.getElementById('game');
+  const ctx = canvas.getContext('2d');
+  const wrap = document.getElementById('gameWrap');
+  const waveEl = document.getElementById('waveEl');
+  const scoreEl = document.getElementById('scoreEl');
+  const comboEl = document.getElementById('comboEl');
+  const lifeEl = document.getElementById('lifeEl');
+  const bombEl = document.getElementById('bombEl');
+  const bombBtn = document.getElementById('bombBtn');
+  const bombCnt = document.getElementById('bombCnt');
+  const overlay = document.getElementById('overlay');
+  const ovEyebrow = document.getElementById('ovEyebrow');
+  const ovTitle = document.getElementById('ovTitle');
+  const ovBody = document.getElementById('ovBody');
+  const ovBtn = document.getElementById('ovBtn');
+  const mathOverlay = document.getElementById('mathOverlay');
+  const mathProblemEl = document.getElementById('mathProblem');
+  const mathInputEl = document.getElementById('mathInput');
+  const restartBtn = document.getElementById('restartBtn');
+  const pauseBtn = document.getElementById('pauseBtn');
+
+  const W = 420, H = 600;
+  const SHIP_Y = H - 56;
+  const SHIP_W = 36, SHIP_H = 28;
+  const BULLET_SPEED = 8;
+  const ENEMY_R = 14;
+  const FIRE_RATE = 220;       // ms
+  const KILLS_PER_MATH = 10;
+
+  const COL = {
+    space:'#0A1428', star:'#FFFFFF', ship:'#1F6FEB', shipEdge:'#0F4EB3',
+    bullet:'#D4A843', enemy:'#D34234', enemyEdge:'#9D251B',
+    invul:'rgba(255,255,255,.4)', bombFlash:'rgba(212,168,67,.6)',
+  };
+
+  // ===== State =====
+  let state = 'ready';        // ready | playing | math | paused | over
+  let stage = 1, score = 0, correctCount = 0;
+  let lives = 5, bombs = 0;
+  let killsSinceMath = 0, totalKills = 0;
+  let player = { x: W/2, targetX: W/2, invulUntil: 0 };
+  let enemies = [], bullets = [], stars = [], fx = [];
+  let lastTs = 0, lastFire = 0, lastSpawn = 0, pausedAt = 0;
+  let raf = null, left = false, right = false;
+  let difficulty = 'medium';
+  let problem = null, mathInput = '';
+  let inputClass = ''; // 'correct' | 'wrong' | ''
+
+  function rnd(a,b){ return a + Math.random()*(b-a); }
+  function clamp(v,a,b){ return Math.max(a, Math.min(b, v)); }
+  function now(){ return performance.now(); }
+
+  // ===== Problem generator =====
+  function genProblem(diff){
+    if (diff === 'easy') {
+      const t = Math.random();
+      if (t < 0.4) { const a=(Math.random()*9|0)+1, b=(Math.random()*9|0)+1; return { q:`${a} + ${b}`, ans:a+b }; }
+      if (t < 0.8) { const a=(Math.random()*9|0)+1, b=(Math.random()*a|0)+1; return { q:`${a} - ${b}`, ans:a-b }; }
+      const a=(Math.random()*4|0)+2, b=(Math.random()*4|0)+2; return { q:`${a} × ${b}`, ans:a*b };
+    }
+    if (diff === 'medium') {
+      const t = Math.random();
+      if (t < 0.55) { const a=(Math.random()*8|0)+2, b=(Math.random()*8|0)+2; return { q:`${a} × ${b}`, ans:a*b }; }
+      if (t < 0.85) { const a=(Math.random()*89|0)+11, b=(Math.random()*89|0)+11; return { q:`${a} + ${b}`, ans:a+b }; }
+      let a=(Math.random()*89|0)+11, b=(Math.random()*89|0)+11; if (b>a)[a,b]=[b,a]; return { q:`${a} - ${b}`, ans:a-b };
+    }
+    const t = Math.random();
+    if (t < 0.3) { const a=(Math.random()*19|0)+5, b=(Math.random()*8|0)+2; return { q:`${a} × ${b}`, ans:a*b }; }
+    if (t < 0.6) { const b=(Math.random()*8|0)+2, q=(Math.random()*11|0)+2; return { q:`${b*q} ÷ ${b}`, ans:q }; }
+    if (t < 0.85) { const a=(Math.random()*899|0)+100, b=(Math.random()*899|0)+100; return { q:`${a} + ${b}`, ans:a+b }; }
+    let a=(Math.random()*899|0)+100, b=(Math.random()*899|0)+100; if (b>a)[a,b]=[b,a]; return { q:`${a} - ${b}`, ans:a-b };
+  }
+
+  // ===== Stars background =====
+  function makeStars(){
+    stars = [];
+    for (let i=0;i<60;i++) stars.push({x:rnd(0,W), y:rnd(0,H), r:rnd(0.5,1.8), a:rnd(0.2,0.7), vy:rnd(0.2,0.6)});
+  }
+
+  // ===== Setup / flow =====
+  function show(eyebrow, title, body, btnText, btnFn){
+    overlay.classList.remove('hidden');
+    ovEyebrow.textContent = eyebrow;
+    ovTitle.innerHTML = title;
+    ovBody.innerHTML = body;
+    if (btnText) { ovBtn.textContent = btnText; ovBtn.onclick = btnFn; ovBtn.style.display = ''; }
+    else ovBtn.style.display = 'none';
+  }
+  function reset(){
+    state = 'ready';
+    stage = 1; score = 0; correctCount = 0;
+    lives = 5; bombs = 0;
+    killsSinceMath = 0; totalKills = 0;
+    enemies = []; bullets = []; fx = [];
+    player.x = player.targetX = W/2; player.invulUntil = 0;
+    makeStars();
+    updateUI();
+    show('READY','수학 디펜더',
+      '적이 위에서 내려옵니다. 화면 좌우 드래그로 우주선 이동.<br>' +
+      '<strong>10마리 잡을 때마다 수학 문제</strong>가 나옵니다.<br>' +
+      '맞히면 💣 폭탄을 얻고, 폭탄으로 화면의 적을 모두 제거할 수 있어요!',
+      '시작', startGame);
+  }
+  function startGame(){
+    state = 'playing';
+    overlay.classList.add('hidden');
+    lastTs = now(); lastFire = 0; lastSpawn = 0;
+    if (!raf) raf = requestAnimationFrame(loop);
+  }
+  function togglePause(){
+    if (state === 'ready') return startGame();
+    if (state === 'playing'){
+      state = 'paused';
+      pausedAt = now();
+      pauseBtn.textContent = '재개';
+      show('PAUSED','일시정지', `점수 <strong>${score}</strong> · 생명 <strong>${lives}</strong> · 폭탄 <strong>${bombs}</strong>`, '재개', togglePause);
+    } else if (state === 'paused'){
+      state = 'playing';
+      pauseBtn.textContent = '일시정지';
+      overlay.classList.add('hidden');
+      lastTs = now();
+    }
+  }
+  function gameOver(){
+    state = 'over';
+    if (navigator.vibrate) navigator.vibrate(70);
+    show('GAME OVER','게임 오버',
+      `최종 점수 <strong>${score}</strong><br>정답 <strong>${correctCount}</strong>개 · 처치 <strong>${totalKills}</strong>마리`,
+      '처음부터', reset);
+  }
+
+  // ===== Math break =====
+  function pauseForMath(){
+    state = 'math';
+    problem = genProblem(difficulty);
+    mathProblemEl.textContent = problem.q + ' = ?';
+    mathInput = '';
+    inputClass = '';
+    renderMathInput();
+    mathOverlay.classList.remove('hidden');
+  }
+  function renderMathInput(){
+    mathInputEl.textContent = mathInput || '_';
+    mathInputEl.className = 'input' + (inputClass ? ' ' + inputClass : '');
+  }
+  function pressKey(k){
+    if (state !== 'math' || inputClass) return;
+    if (k === 'del') mathInput = mathInput.slice(0, -1);
+    else if (k === 'ok') return submitMath();
+    else if (mathInput.length < 6) mathInput += k;
+    renderMathInput();
+  }
+  function submitMath(){
+    if (mathInput === '') return;
+    const val = parseInt(mathInput, 10);
+    if (val === problem.ans) {
+      inputClass = 'correct';
+      bombs = Math.min(5, bombs + 1);
+      correctCount++;
+      score += 50;
+      mathInputEl.textContent = val + ' ✓';
+    } else {
+      inputClass = 'wrong';
+      mathInputEl.textContent = mathInput + ' ✗ (정답 ' + problem.ans + ')';
+    }
+    renderMathInput();
+    updateUI();
+    setTimeout(() => {
+      mathOverlay.classList.add('hidden');
+      state = 'playing';
+      lastTs = now();
+    }, 1100);
+  }
+
+  // ===== Bomb =====
+  function useBomb(){
+    if (state !== 'playing') return;
+    if (bombs <= 0) return;
+    bombs--;
+    for (const e of enemies){
+      if (e.alive) { e.alive = false; score += 5; }
+    }
+    fx.push({type:'flash', x:W/2, y:H/2, r:0, life:30, vr:18});
+    if (navigator.vibrate) navigator.vibrate(40);
+    player.invulUntil = now() + 800;
+    updateUI();
+  }
+
+  // ===== Spawning =====
+  function spawnEnemy(){
+    const speed = 1.2 + Math.min(2.4, totalKills * 0.012);
+    enemies.push({ x: rnd(40, W-40), y: -20, vx: rnd(-0.2, 0.2), vy: speed, r: ENEMY_R, alive: true });
+  }
+  function fire(){
+    if (now() - lastFire < FIRE_RATE) return;
+    bullets.push({ x: player.x, y: SHIP_Y - SHIP_H, vy: -BULLET_SPEED, alive:true });
+    lastFire = now();
+  }
+
+  // ===== Update loop =====
+  function update(ts, dt){
+    const f = dt / 16.67;
+    // Movement
+    if (left) player.targetX -= 6.2 * f;
+    if (right) player.targetX += 6.2 * f;
+    player.targetX = clamp(player.targetX, 30, W - 30);
+    player.x += (player.targetX - player.x) * 0.30;
+
+    // Auto-fire
+    if (state === 'playing') fire();
+
+    // Spawn enemies
+    const spawnInterval = Math.max(360, 900 - totalKills * 6);
+    if (ts - lastSpawn > spawnInterval) {
+      spawnEnemy();
+      lastSpawn = ts;
+    }
+
+    // Move bullets
+    for (const b of bullets){
+      if (!b.alive) continue;
+      b.y += b.vy * f;
+      if (b.y < -10) b.alive = false;
+      // hit enemy
+      for (const e of enemies){
+        if (!e.alive) continue;
+        const dx = b.x - e.x, dy = b.y - e.y;
+        if (dx*dx + dy*dy < (e.r + 3) * (e.r + 3)){
+          e.alive = false; b.alive = false;
+          score += 10;
+          killsSinceMath++; totalKills++;
+          // small spark
+          for (let i=0;i<5;i++) fx.push({type:'spark', x:e.x, y:e.y, vx:rnd(-1.4,1.4), vy:rnd(-1.4,0.4), r:rnd(1.8,3), life:rnd(10,18), color:COL.bullet});
+          // Trigger math break?
+          if (killsSinceMath >= KILLS_PER_MATH) {
+            killsSinceMath = 0;
+            pauseForMath();
+          }
+          break;
+        }
+      }
+    }
+
+    // Move enemies
+    for (const e of enemies){
+      if (!e.alive) continue;
+      e.x += e.vx * f;
+      e.y += e.vy * f;
+      if (e.x < 20 || e.x > W - 20) e.vx *= -1;
+      // hit player
+      if (ts > player.invulUntil) {
+        const dx = e.x - player.x, dy = e.y - SHIP_Y;
+        if (Math.abs(dx) < SHIP_W/2 + e.r - 4 && Math.abs(dy) < SHIP_H/2 + e.r - 4) {
+          e.alive = false;
+          lives = Math.max(0, lives - 1);
+          player.invulUntil = ts + 1400;
+          if (navigator.vibrate) navigator.vibrate(60);
+          for (let i=0;i<14;i++) fx.push({type:'spark', x:player.x, y:SHIP_Y, vx:rnd(-2.2,2.2), vy:rnd(-2.4,1), r:rnd(2,3.6), life:rnd(14,22), color:COL.enemy});
+        }
+      }
+      // reached bottom (also takes a life)
+      if (e.y > H + 10) {
+        e.alive = false;
+        if (ts > player.invulUntil) {
+          lives = Math.max(0, lives - 1);
+          player.invulUntil = ts + 800;
+        }
+      }
+    }
+
+    enemies = enemies.filter(e => e.alive);
+    bullets = bullets.filter(b => b.alive);
+
+    // FX
+    for (const p of fx){
+      p.life -= f;
+      if (p.type === 'spark') { p.x += p.vx*f; p.y += p.vy*f; p.vy += 0.06*f; }
+      if (p.type === 'flash') { p.r += p.vr*f; }
+    }
+    fx = fx.filter(p => p.life > 0);
+
+    // Stars scrolling
+    for (const s of stars){
+      s.y += s.vy * f;
+      if (s.y > H) { s.y = -2; s.x = rnd(0, W); }
+    }
+
+    if (lives <= 0) return gameOver();
+    updateUI();
+  }
+
+  function updateUI(){
+    waveEl.textContent = Math.floor(totalKills / 20) + 1;
+    scoreEl.textContent = score;
+    comboEl.textContent = correctCount;
+    lifeEl.textContent = '♥'.repeat(lives) || '0';
+    bombEl.textContent = bombs;
+    bombCnt.textContent = bombs;
+    bombBtn.classList.toggle('disabled', bombs <= 0 || state !== 'playing');
+  }
+
+  // ===== Drawing =====
+  function clearBacking(){
+    ctx.save(); ctx.setTransform(1,0,0,1,0,0); ctx.clearRect(0,0,canvas.width,canvas.height); ctx.restore();
+  }
+  function draw(){
+    clearBacking();
+    ctx.fillStyle = COL.space; ctx.fillRect(0,0,W,H);
+    // Stars
+    for (const s of stars){
+      ctx.fillStyle = `rgba(255,255,255,${s.a})`;
+      ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI*2); ctx.fill();
+    }
+    // Enemies
+    for (const e of enemies){
+      if (!e.alive) continue;
+      ctx.fillStyle = COL.enemyEdge;
+      ctx.beginPath(); ctx.arc(e.x, e.y, e.r+1.5, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = COL.enemy;
+      ctx.beginPath(); ctx.arc(e.x, e.y, e.r, 0, Math.PI*2); ctx.fill();
+      // little teeth
+      ctx.fillStyle = '#FFF';
+      for (let i=-1;i<=1;i++){
+        ctx.beginPath(); ctx.arc(e.x+i*5, e.y-2, 1.4, 0, Math.PI*2); ctx.fill();
+      }
+    }
+    // Bullets
+    for (const b of bullets){
+      if (!b.alive) continue;
+      ctx.fillStyle = COL.bullet;
+      ctx.fillRect(b.x-1.5, b.y-6, 3, 10);
+    }
+    // FX
+    for (const p of fx){
+      if (p.type === 'spark'){
+        ctx.fillStyle = p.color;
+        ctx.globalAlpha = Math.min(1, p.life/16);
+        ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI*2); ctx.fill();
+        ctx.globalAlpha = 1;
+      } else if (p.type === 'flash'){
+        ctx.strokeStyle = COL.bombFlash;
+        ctx.lineWidth = 8;
+        ctx.globalAlpha = Math.min(1, p.life/30);
+        ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI*2); ctx.stroke();
+        ctx.globalAlpha = 1;
+      }
+    }
+    // Player ship
+    drawShip();
+  }
+  function drawShip(){
+    const x = player.x, y = SHIP_Y;
+    const blink = now() < player.invulUntil ? (Math.floor(now()/100) % 2 === 0) : false;
+    if (blink) ctx.globalAlpha = 0.4;
+    ctx.fillStyle = COL.shipEdge;
+    ctx.beginPath();
+    ctx.moveTo(x, y - SHIP_H/2);
+    ctx.lineTo(x + SHIP_W/2, y + SHIP_H/2);
+    ctx.lineTo(x - SHIP_W/2, y + SHIP_H/2);
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle = COL.ship;
+    ctx.beginPath();
+    ctx.moveTo(x, y - SHIP_H/2 + 4);
+    ctx.lineTo(x + SHIP_W/2 - 4, y + SHIP_H/2 - 2);
+    ctx.lineTo(x - SHIP_W/2 + 4, y + SHIP_H/2 - 2);
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#FFF';
+    ctx.fillRect(x-2, y - 6, 4, 4);
+    if (blink) ctx.globalAlpha = 1;
+  }
+
+  function loop(ts){
+    const dt = Math.min(50, ts - lastTs || 16.67);
+    lastTs = ts;
+    if (state === 'playing') update(ts, dt);
+    draw();
+    raf = requestAnimationFrame(loop);
+  }
+
+  // ===== Input =====
+  function sizeCanvas(){
+    const r = wrap.getBoundingClientRect();
+    const dpr = Math.max(1, window.devicePixelRatio || 1);
+    const scale = Math.min(r.width / W, r.height / H);
+    canvas.width = Math.round(r.width * dpr);
+    canvas.height = Math.round(r.height * dpr);
+    ctx.setTransform(dpr*scale,0,0,dpr*scale,(r.width-W*scale)*dpr/2,(r.height-H*scale)*dpr/2);
+  }
+  window.addEventListener('resize', sizeCanvas);
+
+  function pointerToX(e){
+    const r = wrap.getBoundingClientRect();
+    const px = ('touches' in e && e.touches.length) ? e.touches[0].clientX : e.clientX;
+    const scale = Math.min(r.width / W, r.height / H);
+    const offsetX = (r.width - W*scale) / 2;
+    return clamp((px - r.left - offsetX) / scale, 30, W - 30);
+  }
+  function setShip(e){
+    if (state !== 'playing') return;
+    player.targetX = pointerToX(e);
+    if (e.cancelable) e.preventDefault();
+  }
+  wrap.addEventListener('pointerdown', e => {
+    if (state !== 'playing') return;
+    wrap.setPointerCapture?.(e.pointerId);
+    setShip(e);
+  });
+  wrap.addEventListener('pointermove', setShip);
+  wrap.addEventListener('touchmove', e => { if (state === 'playing') setShip(e); }, {passive:false});
+
+  window.addEventListener('keydown', e => {
+    if (state === 'math') {
+      if (e.key >= '0' && e.key <= '9') { pressKey(e.key); e.preventDefault(); }
+      else if (e.key === 'Backspace') { pressKey('del'); e.preventDefault(); }
+      else if (e.key === 'Enter') { pressKey('ok'); e.preventDefault(); }
+      return;
+    }
+    if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') { left = true; e.preventDefault(); }
+    if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') { right = true; e.preventDefault(); }
+    if (e.key === 'p' || e.key === 'P') { togglePause(); e.preventDefault(); }
+    if (e.key === 'b' || e.key === 'B') { useBomb(); e.preventDefault(); }
+    if ((e.key === ' ' || e.key === 'Enter') && state === 'ready') { startGame(); e.preventDefault(); }
+  });
+  window.addEventListener('keyup', e => {
+    if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') left = false;
+    if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') right = false;
+  });
+
+  // Numpad
+  document.querySelectorAll('.numpad .key').forEach(btn => {
+    btn.addEventListener('click', () => pressKey(btn.dataset.k));
+  });
+
+  // Difficulty
+  document.querySelectorAll('.diff-btn').forEach(btn => btn.addEventListener('click', () => {
+    if (btn.classList.contains('active')) return;
+    document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    difficulty = btn.dataset.diff;
+    reset();
+  }));
+  restartBtn.onclick = reset;
+  pauseBtn.onclick = togglePause;
+  bombBtn.addEventListener('click', useBomb);
+  ovBtn.onclick = startGame;
+
+  // ===== Boot =====
+  sizeCanvas();
+  makeStars();
+  draw();
+  updateUI();
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
