@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>Math Gates · 수학 게이트</title>
+<style>
+  :root{
+    --bg:#FDF8EE; --panel:#FFFFFF; --ink:#0A0A0A; --sub:#666666;
+    --line:#E8E0D2; --gold:#D4A843; --blue:#1F6FEB; --blue2:#0F4EB3;
+    --red:#D34234; --red2:#9D251B; --green:#2C7A4D; --green2:#1E5B38;
+    --neutral:#5A6B82;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;overflow:hidden;background:var(--bg);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans KR",sans-serif;color:var(--ink);}
+  body{display:flex;align-items:center;justify-content:center;padding:12px;-webkit-tap-highlight-color:transparent;touch-action:none;}
+  .app{width:min(100%,440px);height:min(100vh,820px);display:flex;flex-direction:column;gap:8px;}
+  .top{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:12px 14px;box-shadow:0 8px 24px rgba(10,10,10,.08)}
+  .brand{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+  .brand h1{font-size:22px;letter-spacing:-.05em;font-weight:950;line-height:1.05}
+  .brand .tag{font-size:11px;color:var(--sub);font-weight:900;letter-spacing:.12em;text-transform:uppercase}
+  .diff-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;margin-bottom:8px}
+  .diff-btn{padding:7px 0;background:var(--panel);border:1px solid var(--line);border-radius:10px;font-size:12px;font-weight:900;color:var(--sub);cursor:pointer;letter-spacing:-.02em}
+  .diff-btn.active{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+  .stat{background:#F7EEDB;border:1px solid var(--line);border-radius:12px;padding:7px 4px;text-align:center;min-width:0}
+  .stat .label{font-size:10px;color:var(--sub);font-weight:850;letter-spacing:-.03em;white-space:nowrap}
+  .stat .value{font-size:18px;font-weight:950;letter-spacing:-.04em;font-variant-numeric:tabular-nums;margin-top:1px}
+  .stat.score .value{color:var(--green)}
+  .stat.hp .value{color:var(--red)}
+  .stat.time .value{color:var(--gold)}
+
+  .problem{background:var(--ink);color:#fff;border-radius:14px;padding:14px 12px;text-align:center;letter-spacing:-.03em}
+  .problem .label{font-size:11px;color:var(--gold);font-weight:850;letter-spacing:.18em;text-transform:uppercase;margin-bottom:4px}
+  .problem .q{font-size:32px;font-weight:950;font-variant-numeric:tabular-nums}
+
+  .game-wrap{position:relative;flex:1;min-height:0;background:var(--panel);border:1px solid var(--ink);border-radius:22px;overflow:hidden;box-shadow:0 12px 32px rgba(10,10,10,.16);touch-action:none;user-select:none}
+  canvas{display:block;width:100%;height:100%;}
+  .overlay{position:absolute;inset:0;background:rgba(10,10,10,.76);display:flex;align-items:center;justify-content:center;padding:20px;z-index:10}
+  .overlay.hidden{display:none}
+  .card{width:min(100%,335px);background:var(--panel);border-radius:22px;border:2px solid var(--gold);padding:22px 18px;text-align:center;box-shadow:0 18px 44px rgba(0,0,0,.28)}
+  .eyebrow{font-size:12px;font-weight:950;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin-bottom:8px}
+  .card h2{font-size:26px;letter-spacing:-.06em;line-height:1.05;margin-bottom:10px}
+  .card p{font-size:14px;line-height:1.6;color:var(--sub);font-weight:650;margin-bottom:16px}
+  .card strong{color:var(--ink);font-weight:950}
+  .btn-main{appearance:none;border:0;border-radius:14px;background:var(--ink);color:#fff;padding:13px 16px;width:100%;font-weight:950;font-size:15px;cursor:pointer;touch-action:manipulation;position:relative;z-index:2}
+
+  .controls{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .btn{appearance:none;border:1px solid var(--ink);background:var(--panel);border-radius:14px;padding:11px 8px;font-size:13px;font-weight:900;color:var(--ink);cursor:pointer}
+  .btn:active{background:var(--ink);color:#fff}
+  .hint{font-size:12px;line-height:1.45;color:var(--sub);text-align:center;font-weight:650;padding:0 10px 4px}
+  .footer{text-align:center;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--sub);font-weight:850;padding-top:2px}
+</style>
+</head>
+<body>
+<div class="app">
+  <section class="top">
+    <div class="brand">
+      <h1>수학 게이트 · Math Gates</h1>
+      <div class="tag">Game · No. 17</div>
+    </div>
+    <div class="diff-row">
+      <button class="diff-btn" data-diff="easy">쉬움 (1~2학년)</button>
+      <button class="diff-btn active" data-diff="medium">보통 (3~4학년)</button>
+      <button class="diff-btn" data-diff="hard">어려움 (5~6학년)</button>
+    </div>
+    <div class="stats">
+      <div class="stat"><div class="label">STAGE</div><div class="value" id="stageEl">1</div></div>
+      <div class="stat score"><div class="label">정답</div><div class="value" id="scoreEl">0</div></div>
+      <div class="stat hp"><div class="label">보스</div><div class="value" id="hpEl">30</div></div>
+      <div class="stat time"><div class="label">시간</div><div class="value" id="timeEl">60</div></div>
+    </div>
+  </section>
+
+  <div class="problem">
+    <div class="label" id="probLabel">Problem</div>
+    <div class="q" id="probQ">7 × 8 = ?</div>
+  </div>
+
+  <main class="game-wrap" id="gameWrap">
+    <canvas id="game"></canvas>
+    <div class="overlay" id="overlay">
+      <div class="card">
+        <div class="eyebrow" id="ovEyebrow">READY</div>
+        <h2 id="ovTitle">수학 게이트<br>대포로 정답을 맞춰라</h2>
+        <p id="ovBody">
+          위에 나오는 <strong>수학 문제의 정답</strong>이 적힌 게이트로<br>
+          대포를 조준해서 병사를 보내세요.<br>
+          정답 게이트 = 병사가 보스를 공격 · 오답 게이트 = 병사 소멸<br>
+          정답을 많이 맞춰서 보스를 쓰러뜨리면 클리어!
+        </p>
+        <button class="btn-main" id="ovBtn">시작</button>
+      </div>
+    </div>
+  </main>
+
+  <div class="controls">
+    <button class="btn" id="restartBtn">처음부터</button>
+    <button class="btn" id="pauseBtn">일시정지</button>
+  </div>
+  <div class="hint">화면을 좌우로 드래그해 대포 이동 · PC는 ←/→ 키 · P = 일시정지</div>
+  <div class="footer">— Min1 Park · 2026 —</div>
+</div>
+
+<script>
+(() => {
+  const canvas = document.getElementById('game');
+  const ctx = canvas.getContext('2d');
+  const wrap = document.getElementById('gameWrap');
+  const stageEl = document.getElementById('stageEl');
+  const scoreEl = document.getElementById('scoreEl');
+  const hpEl = document.getElementById('hpEl');
+  const timeEl = document.getElementById('timeEl');
+  const probLabel = document.getElementById('probLabel');
+  const probQ = document.getElementById('probQ');
+  const overlay = document.getElementById('overlay');
+  const ovEyebrow = document.getElementById('ovEyebrow');
+  const ovTitle = document.getElementById('ovTitle');
+  const ovBody = document.getElementById('ovBody');
+  const ovBtn = document.getElementById('ovBtn');
+  const restartBtn = document.getElementById('restartBtn');
+  const pauseBtn = document.getElementById('pauseBtn');
+
+  const W = 420, H = 600;
+  const ROAD_L = 34, ROAD_R = W - 34;
+  const CANNON_Y = H - 56;
+  const BOSS_Y = 20, BOSS_H = 56;
+  const LIMIT = 60;
+  const MAX_MOBS = 380;
+
+  const COL = {
+    bg:'#FDF8EE', road:'#EFE3CC', wall:'#B8AA90', wallDark:'#8D7F66', lane:'rgba(10,10,10,.07)',
+    ink:'#0A0A0A', white:'#FFFFFF', gold:'#D4A843', blue:'#1F6FEB', blue2:'#0F4EB3',
+    red:'#D34234', red2:'#9D251B', green:'#2C7A4D', green2:'#1E5B38',
+    neutralGate:'#5A6B82', neutralGate2:'#3A4858',
+    shadow:'rgba(10,10,10,.16)',
+  };
+
+  // ===== State =====
+  let state = 'ready';
+  let stage = 1;
+  let difficulty = 'medium';
+  let problem = null;
+  let cannon = { x: W/2, targetX: W/2, vx: 0 };
+  let mobs = [];
+  let gates = [];
+  let gateSeq = 1;
+  let fx = [];
+  let boss = { hp: 30, max: 30 };
+  let score = 0;
+  let startAt = 0, pausedAt = 0, lastTs = 0;
+  let lastFire = 0, nextProblem = 0;
+  let raf = null;
+  let left = false, right = false;
+  const FIRE_RATE = 130, MOB_SPEED = 3.6;
+  const PROBLEM_INTERVAL = 6500;   // ms — new problem every ~6.5s
+
+  function rnd(a,b){ return a + Math.random()*(b-a); }
+  function clamp(v,a,b){ return Math.max(a, Math.min(b, v)); }
+  function now(){ return performance.now(); }
+  function shuffle(arr){ const a=arr.slice(); for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
+
+  // ===== Problem generator =====
+  function genProblem(diff) {
+    if (diff === 'easy') {
+      // 1자리 + - or simple multiplication up to 5
+      const t = Math.random();
+      if (t < 0.4) {
+        const a = (Math.random()*9|0)+1, b = (Math.random()*9|0)+1;
+        return { q:`${a} + ${b} = ?`, ans:a+b };
+      } else if (t < 0.8) {
+        const a = (Math.random()*9|0)+1, b = (Math.random()*a|0)+1;
+        return { q:`${a} - ${b} = ?`, ans:a-b };
+      } else {
+        const a = (Math.random()*4|0)+2, b = (Math.random()*4|0)+2;
+        return { q:`${a} × ${b} = ?`, ans:a*b };
+      }
+    }
+    if (diff === 'medium') {
+      // 구구단 + 2자리 +/-
+      const t = Math.random();
+      if (t < 0.5) {
+        const a = (Math.random()*8|0)+2, b = (Math.random()*8|0)+2;
+        return { q:`${a} × ${b} = ?`, ans:a*b };
+      } else if (t < 0.8) {
+        const a = (Math.random()*89|0)+11, b = (Math.random()*89|0)+11;
+        return { q:`${a} + ${b} = ?`, ans:a+b };
+      } else {
+        let a = (Math.random()*89|0)+11, b = (Math.random()*89|0)+11;
+        if (b > a) [a,b]=[b,a];
+        return { q:`${a} - ${b} = ?`, ans:a-b };
+      }
+    }
+    // hard: bigger mult, division, 3-digit add/sub
+    const t = Math.random();
+    if (t < 0.3) {
+      const a = (Math.random()*19|0)+5, b = (Math.random()*8|0)+2;
+      return { q:`${a} × ${b} = ?`, ans:a*b };
+    } else if (t < 0.6) {
+      const b = (Math.random()*8|0)+2;
+      const q = (Math.random()*11|0)+2;
+      return { q:`${b*q} ÷ ${b} = ?`, ans:q };
+    } else if (t < 0.85) {
+      const a = (Math.random()*899|0)+100, b = (Math.random()*899|0)+100;
+      return { q:`${a} + ${b} = ?`, ans:a+b };
+    } else {
+      let a = (Math.random()*899|0)+100, b = (Math.random()*899|0)+100;
+      if (b > a) [a,b]=[b,a];
+      return { q:`${a} - ${b} = ?`, ans:a-b };
+    }
+  }
+  function genWrongs(correct, n){
+    const seen = new Set([correct]);
+    const result = [];
+    let range = Math.max(5, Math.floor(Math.abs(correct) * 0.35));
+    let safety = 0;
+    while (result.length < n && safety++ < 50) {
+      const delta = (Math.random()*2*range|0) - range;
+      const w = correct + (delta || (Math.random() < 0.5 ? 1 : -1));
+      if (w < 0 || seen.has(w)) continue;
+      seen.add(w); result.push(w);
+    }
+    while (result.length < n) result.push(correct + result.length + 1);
+    return result;
+  }
+
+  // ===== Stage setup =====
+  function buildStage(){
+    mobs = []; gates = []; fx = [];
+    score = 0;
+    boss.max = 30 + stage * 20;   // each correct-gate mob does 1 damage
+    boss.hp = boss.max;
+    cannon.x = cannon.targetX = W/2;
+    spawnProblemAndGates(now() + 200);
+    updateUI();
+  }
+
+  function spawnProblemAndGates(ts){
+    problem = genProblem(difficulty);
+    probQ.textContent = problem.q;
+    probLabel.textContent = 'Problem';
+    // Generate 3 gates: correct + 2 wrongs, shuffled positions
+    const wrongs = genWrongs(problem.ans, 2);
+    const values = shuffle([problem.ans, ...wrongs]);
+    const w = 100, gap = 14;
+    const totalW = 3*w + 2*gap;
+    const startX = (W - totalW) / 2;
+    const y = rnd(200, 320);
+    gates = [];
+    for (let i=0;i<3;i++){
+      gates.push({
+        id:'g'+gateSeq++, x:startX + i*(w+gap), y, w, h:50,
+        value: values[i], born: ts, ttl: PROBLEM_INTERVAL, alpha:0, shake:0, flashState: null,
+      });
+    }
+    nextProblem = ts + PROBLEM_INTERVAL;
+  }
+
+  // ===== Game flow =====
+  function show(eyebrow, title, body, btnText, btnFn){
+    ovEyebrow.textContent = eyebrow;
+    ovTitle.innerHTML = title;
+    ovBody.innerHTML = body;
+    ovBtn.textContent = btnText;
+    ovBtn.onclick = btnFn;
+    overlay.classList.remove('hidden');
+  }
+  function restart(){
+    stage = 1;
+    buildStage();
+    show('READY','수학 게이트<br>대포로 정답을 맞춰라',
+      '위 수학 문제의 <strong>정답이 적힌 게이트</strong>로 대포를 조준해서 병사를 보내세요.<br>정답 게이트 = 보스 공격 · 오답 게이트 = 병사 소멸<br>보스를 시간 안에 쓰러뜨리면 클리어!',
+      '시작', startGame);
+  }
+  function startGame(){
+    state = 'playing';
+    overlay.classList.add('hidden');
+    startAt = now();
+    lastTs = startAt;
+    lastFire = 0;
+    if (!raf) raf = requestAnimationFrame(loop);
+  }
+  function togglePause(){
+    if (state === 'ready') return startGame();
+    if (state === 'playing'){
+      state = 'paused';
+      pausedAt = now();
+      pauseBtn.textContent = '재개';
+      show('PAUSED','일시정지',`정답 <strong>${score}</strong> · 보스 HP <strong>${Math.ceil(boss.hp)}</strong>`,'재개',togglePause);
+    } else if (state === 'paused'){
+      state = 'playing';
+      pauseBtn.textContent = '일시정지';
+      overlay.classList.add('hidden');
+      const diff = now() - pausedAt;
+      startAt += diff;
+      nextProblem += diff;
+      gates.forEach(g => g.born += diff);
+      lastTs = now();
+    }
+  }
+  function win(){
+    state = 'cleared';
+    const remain = Math.max(0, Math.ceil(LIMIT - (now()-startAt)/1000));
+    show('VICTORY',`스테이지 ${stage} 클리어`,
+      `정답 <strong>${score}</strong>개 · 남은 시간 <strong>${remain}초</strong><br>다음 스테이지는 보스가 더 강해집니다.`,
+      '다음 스테이지', () => { stage++; buildStage(); startGame(); });
+  }
+  function lose(reason='시간 초과'){
+    state = 'over';
+    if (navigator.vibrate) navigator.vibrate(70);
+    show('DEFEAT',`스테이지 ${stage} 실패`,
+      `${reason}<br>정답 <strong>${score}</strong>개<br>천천히 문제를 풀고 정답 게이트로 조준하세요.`,
+      '처음부터', restart);
+  }
+
+  function updateUI(){
+    stageEl.textContent = stage;
+    scoreEl.textContent = score;
+    hpEl.textContent = Math.ceil(boss.hp);
+    const t = state === 'playing' ? Math.max(0, Math.ceil(LIMIT - (now()-startAt)/1000)) : LIMIT;
+    timeEl.textContent = t;
+  }
+
+  // ===== Game logic =====
+  function fire(ts){
+    if (ts - lastFire < FIRE_RATE) return;
+    if (mobs.length >= MAX_MOBS) return;
+    const recoil = cannon.vx * 0.05;
+    mobs.push({ x:cannon.x + rnd(-5,5), y:CANNON_Y-28, vx:recoil + rnd(-.16,.16), vy:-MOB_SPEED, r:4.3, alive:true, passed:new Set() });
+    lastFire = ts;
+  }
+
+  function applyGate(g, m){
+    if (m.passed.has(g.id)) return;
+    m.passed.add(g.id);
+    g.shake = 6;
+    if (g.value === problem.ans) {
+      // Correct: count it immediately, mob continues to hit boss (+1 HP damage there)
+      g.flashState = 'correct';
+      score++;
+      spark(g.x+g.w/2, g.y+g.h/2, COL.green, 6);
+    } else {
+      // Wrong: mob destroyed
+      g.flashState = 'wrong';
+      m.alive = false;
+      spark(g.x+g.w/2, g.y+g.h/2, COL.red, 5);
+    }
+  }
+
+  function spark(x,y,color,n=5){
+    if (fx.length > 80) return;
+    for (let i=0;i<n;i++) fx.push({type:'dot',x,y,vx:rnd(-1.6,1.6),vy:rnd(-1.6,1.2),r:rnd(2,3.6),color,life:rnd(12,20)});
+  }
+  function toast(x,y,text,color,life=28){ fx.push({type:'text',x,y,text,color,life,vy:-.55}); }
+
+  function update(ts, dt){
+    const f = dt / 16.67;
+    // cannon movement
+    if (left) cannon.targetX -= 6.2 * f;
+    if (right) cannon.targetX += 6.2 * f;
+    cannon.targetX = clamp(cannon.targetX, ROAD_L+35, ROAD_R-35);
+    const oldX = cannon.x;
+    cannon.x += (cannon.targetX - cannon.x) * 0.28;
+    cannon.vx = cannon.x - oldX;
+
+    fire(ts);
+
+    // Refresh problem on schedule
+    if (ts >= nextProblem) spawnProblemAndGates(ts);
+
+    // Gate alpha + shake
+    for (const g of gates) {
+      const age = ts - g.born;
+      const fadeIn = clamp(age / 280, 0, 1);
+      const fadeOut = clamp((g.ttl - age) / 600, 0, 1);
+      g.alpha = Math.min(fadeIn, fadeOut);
+      if (g.shake > 0) g.shake -= f;
+    }
+
+    // Move mobs and check gates
+    for (const m of mobs){
+      if (!m.alive) continue;
+      m.vx *= Math.pow(0.992, f);
+      m.x += m.vx * f;
+      m.y += m.vy * f;
+      if (m.x < ROAD_L + 10) { m.x = ROAD_L + 10; m.vx *= -0.32; }
+      if (m.x > ROAD_R - 10) { m.x = ROAD_R - 10; m.vx *= -0.32; }
+      for (const g of gates){
+        if (g.alpha < 0.3) continue;
+        if (m.x > g.x && m.x < g.x+g.w && m.y > g.y && m.y < g.y+g.h) applyGate(g,m);
+        if (!m.alive) break;
+      }
+      // hit boss (score is awarded at gate-pass time, not here)
+      if (m.alive && m.y < BOSS_Y + BOSS_H + 4 && m.x > ROAD_L+12 && m.x < ROAD_R-12) {
+        boss.hp = Math.max(0, boss.hp - 1);
+        m.alive = false;
+        if (Math.random() < .35) spark(m.x, BOSS_Y+BOSS_H+6, COL.red, 3);
+      }
+      if (m.y < -20 || m.y > H + 20) m.alive = false;
+    }
+    mobs = mobs.filter(m => m.alive);
+
+    // fx
+    for (const p of fx) {
+      p.life -= f;
+      if (p.type === 'text') p.y += p.vy*f;
+      else { p.x += p.vx*f; p.y += p.vy*f; p.r *= .985; }
+    }
+    fx = fx.filter(p => p.life > 0);
+
+    const elapsed = (ts - startAt) / 1000;
+    if (boss.hp <= 0) return win();
+    if (elapsed >= LIMIT) return lose('시간 초과');
+    updateUI();
+  }
+
+  // ===== Drawing =====
+  function clearBacking(){
+    ctx.save(); ctx.setTransform(1,0,0,1,0,0);
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.restore();
+  }
+  function draw(){
+    clearBacking();
+    drawWorld();
+    drawBoss();
+    gates.forEach(drawGate);
+    mobs.forEach(drawMob);
+    drawCannon();
+    fx.forEach(drawFx);
+  }
+  function drawWorld(){
+    ctx.fillStyle = COL.bg; ctx.fillRect(0,0,W,H);
+    ctx.fillStyle = COL.road; ctx.fillRect(ROAD_L,0,ROAD_R-ROAD_L,H);
+    ctx.fillStyle = COL.wall; ctx.fillRect(0,0,ROAD_L,H); ctx.fillRect(ROAD_R,0,W-ROAD_R,H);
+    ctx.fillStyle = COL.wallDark; ctx.fillRect(ROAD_L-5,0,5,H); ctx.fillRect(ROAD_R,0,5,H);
+    ctx.fillStyle = COL.lane;
+    for (let y=142;y<H;y+=82) ctx.fillRect(ROAD_L,y,ROAD_R-ROAD_L,2);
+  }
+  function drawBoss(){
+    ctx.fillStyle = COL.red2; ctx.fillRect(ROAD_L+8,BOSS_Y,ROAD_R-ROAD_L-16,BOSS_H);
+    ctx.fillStyle = COL.red; ctx.fillRect(ROAD_L+14,BOSS_Y+6,ROAD_R-ROAD_L-28,BOSS_H-12);
+    for(let i=0;i<6;i++){ ctx.fillStyle = COL.red2; ctx.fillRect(ROAD_L+22+i*55,BOSS_Y-8,30,18); }
+    const barW = ROAD_R-ROAD_L-56;
+    ctx.fillStyle = '#4A120D'; ctx.fillRect(ROAD_L+28,BOSS_Y+BOSS_H+10,barW,9);
+    ctx.fillStyle = COL.gold; ctx.fillRect(ROAD_L+28,BOSS_Y+BOSS_H+10,barW*(boss.hp/boss.max),9);
+    ctx.fillStyle = COL.white; ctx.font='950 22px system-ui'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(Math.ceil(boss.hp) + ' / ' + boss.max, W/2, BOSS_Y+BOSS_H/2+1);
+  }
+  function drawGate(g){
+    ctx.save();
+    ctx.globalAlpha = g.alpha;
+    const sx = g.shake > 0 ? rnd(-1.6,1.6) : 0;
+    const sy = g.shake > 0 ? rnd(-1,1) : 0;
+    ctx.translate(sx, sy);
+    let fill = COL.neutralGate, dark = COL.neutralGate2;
+    if (g.flashState === 'correct') { fill = COL.green; dark = COL.green2; }
+    else if (g.flashState === 'wrong') { fill = COL.red; dark = COL.red2; }
+    ctx.fillStyle = COL.shadow; ctx.fillRect(g.x+3,g.y+5,g.w,g.h);
+    ctx.fillStyle = fill; ctx.fillRect(g.x,g.y,g.w,g.h);
+    ctx.fillStyle = dark; ctx.fillRect(g.x,g.y,g.w,5); ctx.fillRect(g.x,g.y+g.h-5,g.w,5);
+    ctx.strokeStyle = COL.white; ctx.lineWidth = 2; ctx.strokeRect(g.x+2,g.y+2,g.w-4,g.h-4);
+    ctx.fillStyle = COL.white; ctx.font = 'bold ' + (g.value > 999 ? 22 : 28) + 'px system-ui';
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(String(g.value), g.x+g.w/2, g.y+g.h/2+1);
+    ctx.restore();
+  }
+  function drawMob(m){
+    ctx.fillStyle = COL.blue2; ctx.beginPath(); ctx.arc(m.x,m.y,m.r+1.8,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle = COL.white; ctx.beginPath(); ctx.arc(m.x,m.y,m.r,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle = COL.blue; ctx.fillRect(m.x-2,m.y+3,4,6);
+  }
+  function drawCannon(){
+    const x = cannon.x;
+    ctx.strokeStyle = 'rgba(31,111,235,.16)'; ctx.lineWidth = 12; ctx.lineCap='round';
+    ctx.beginPath(); ctx.moveTo(x, CANNON_Y-12); ctx.lineTo(x, CANNON_Y-170); ctx.stroke();
+    ctx.strokeStyle = COL.ink; ctx.lineWidth = 20; ctx.lineCap='round';
+    ctx.beginPath(); ctx.moveTo(x, CANNON_Y); ctx.lineTo(x, CANNON_Y-48); ctx.stroke();
+    ctx.strokeStyle = COL.blue; ctx.lineWidth = 12;
+    ctx.beginPath(); ctx.moveTo(x, CANNON_Y); ctx.lineTo(x, CANNON_Y-48); ctx.stroke();
+    ctx.fillStyle = COL.ink; ctx.beginPath(); ctx.arc(x,CANNON_Y,32,Math.PI,0); ctx.fill();
+    ctx.fillStyle = COL.blue; ctx.beginPath(); ctx.arc(x,CANNON_Y,23,Math.PI,0); ctx.fill();
+    ctx.fillStyle = COL.gold; ctx.fillRect(x-45,CANNON_Y+10,90,16);
+    ctx.fillStyle = COL.ink; ctx.beginPath(); ctx.arc(x-26,CANNON_Y+26,8,0,Math.PI*2); ctx.arc(x+26,CANNON_Y+26,8,0,Math.PI*2); ctx.fill();
+  }
+  function drawFx(p){
+    const a = Math.max(0, Math.min(1, p.life/28));
+    ctx.save(); ctx.globalAlpha = a;
+    if (p.type === 'text'){
+      ctx.fillStyle = p.color; ctx.font='950 20px system-ui'; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.lineWidth = 4; ctx.strokeStyle = COL.white; ctx.strokeText(p.text,p.x,p.y); ctx.fillText(p.text,p.x,p.y);
+    } else {
+      ctx.fillStyle = p.color; ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2); ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  function loop(ts){
+    const dt = Math.min(50, ts - lastTs || 16.67);
+    lastTs = ts;
+    if (state === 'playing') update(ts, dt);
+    draw();
+    raf = requestAnimationFrame(loop);
+  }
+
+  // ===== Input =====
+  function sizeCanvas(){
+    const r = wrap.getBoundingClientRect();
+    const dpr = Math.max(1, window.devicePixelRatio || 1);
+    const scale = Math.min(r.width / W, r.height / H);
+    canvas.width = Math.round(r.width * dpr);
+    canvas.height = Math.round(r.height * dpr);
+    ctx.setTransform(dpr*scale,0,0,dpr*scale,(r.width-W*scale)*dpr/2,(r.height-H*scale)*dpr/2);
+  }
+  window.addEventListener('resize', sizeCanvas);
+
+  function pointerToWorld(e){
+    const r = wrap.getBoundingClientRect();
+    const px = ('touches' in e && e.touches.length) ? e.touches[0].clientX : e.clientX;
+    const scale = Math.min(r.width / W, r.height / H);
+    const offsetX = (r.width - W*scale) / 2;
+    const x = (px - r.left - offsetX) / scale;
+    return clamp(x, ROAD_L+35, ROAD_R-35);
+  }
+  function setCannon(e){
+    if (state !== 'playing') return;
+    cannon.targetX = pointerToWorld(e);
+    if (e.cancelable) e.preventDefault();
+  }
+  wrap.addEventListener('pointerdown', e => {
+    if (state !== 'playing') return;
+    wrap.setPointerCapture?.(e.pointerId);
+    setCannon(e);
+  });
+  wrap.addEventListener('pointermove', setCannon);
+  wrap.addEventListener('touchmove', e => { if (state === 'playing') setCannon(e); }, {passive:false});
+
+  window.addEventListener('keydown', e => {
+    if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') { left = true; e.preventDefault(); }
+    if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') { right = true; e.preventDefault(); }
+    if (e.key === 'p' || e.key === 'P') { togglePause(); e.preventDefault(); }
+    if ((e.key === ' ' || e.key === 'Enter') && state === 'ready') { startGame(); e.preventDefault(); }
+  });
+  window.addEventListener('keyup', e => {
+    if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') left = false;
+    if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') right = false;
+  });
+
+  document.querySelectorAll('.diff-btn').forEach(btn => btn.addEventListener('click', () => {
+    if (btn.classList.contains('active')) return;
+    document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    difficulty = btn.dataset.diff;
+    restart();
+  }));
+  restartBtn.onclick = restart;
+  pauseBtn.onclick = togglePause;
+  ovBtn.onclick = startGame;
+
+  // ===== Boot =====
+  sizeCanvas();
+  buildStage();
+  draw();
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
