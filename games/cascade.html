@@ -144,11 +144,9 @@
   let raf = null;
   let left = false, right = false;
 
-  const gateSlots = [
-    { band:[448,522], next:0 },
-    { band:[302,386], next:0 },
-    { band:[168,244], next:0 }
-  ];
+  let nextGateSpawn = 0;
+  const MAX_GATES = 6;
+  const GATE_Y_MIN = 140, GATE_Y_MAX = 530;
 
   function rnd(a,b){ return a + Math.random() * (b-a); }
   function clamp(v,a,b){ return Math.max(a, Math.min(b, v)); }
@@ -193,7 +191,7 @@
     fx = [];
     base.max = 420 + stage * 170;
     base.hp = base.max;
-    gateSlots.forEach((s, i) => { s.next = now() + 300 + i*520; });
+    nextGateSpawn = now() + 300;
     for (let i=0;i<2+Math.min(4, stage);i++) spawnEnemyPack(rnd(110, 270), 12 + stage*3, 0);
     updateUI();
   }
@@ -221,7 +219,7 @@
       overlay.classList.add('hidden');
       const diff = now() - pausedAt;
       startAt += diff;
-      gateSlots.forEach(s => s.next += diff);
+      nextGateSpawn += diff;
       gates.forEach(g => g.born += diff);
       lastTs = now();
     }
@@ -271,35 +269,54 @@
     return list[list.length-1];
   }
 
-  function spawnGateSet(slot, ts){
-    const y = rnd(slot.band[0], slot.band[1]);
+  function gateOverlapsExisting(y) {
+    // Avoid spawning right on top of an existing gate (Y proximity)
+    return gates.some(g => Math.abs(g.y - y) < 60);
+  }
+
+  function spawnGate(ts){
+    // Pick a Y that's not too close to existing gates (try a few times)
+    let y;
+    for (let tries = 0; tries < 5; tries++) {
+      y = rnd(GATE_Y_MIN, GATE_Y_MAX);
+      if (!gateOverlapsExisting(y)) break;
+    }
     const ttl = rnd(4300, 6200) - Math.min(900, stage*90);
     const list = gatePool();
-    let a = weightedPick(list);
-    let b = weightedPick(list.filter(x=>x.label!==a.label));
+    // 65% chance: pair of choices (good vs bad / good vs good). 35%: single tempting gate.
+    const pair = Math.random() < 0.65;
 
-    // Always give at least one tempting positive choice.
-    if ((a.type==='sub'||a.type==='div') && (b.type==='sub'||b.type==='div')) {
-      a = pick(list.filter(x=>x.type==='add'||x.type==='mult'));
+    if (pair) {
+      let a = weightedPick(list);
+      let b = weightedPick(list.filter(x => x.label !== a.label));
+      if ((a.type==='sub'||a.type==='div') && (b.type==='sub'||b.type==='div')) {
+        a = pick(list.filter(x => x.type==='add' || x.type==='mult'));
+      }
+      const w = rnd(92, 120);
+      const gap = rnd(34, 70);
+      const center = rnd(ROAD_L + 150, ROAD_R - 150);
+      let x1 = clamp(center - gap/2 - w, ROAD_L + 16, ROAD_R - 16 - w);
+      let x2 = clamp(center + gap/2, ROAD_L + 16, ROAD_R - 16 - w);
+      if (x2 - (x1+w) < 24) { x1 = ROAD_L + 50; x2 = ROAD_R - 50 - w; }
+      const common = { y, w, h:46, born:ts, ttl, alpha:0, hitCount:0, vy:rnd(-0.04,0.04), shake:0 };
+      gates.push({ id:'g'+gateSeq++, x:x1, e:a, vx:rnd(-0.10,0.10), ...common });
+      gates.push({ id:'g'+gateSeq++, x:x2, e:b, vx:rnd(-0.10,0.10), ...common });
+    } else {
+      // Single gate — usually a multiplier/positive, makes player chase it
+      const positives = list.filter(x => x.type==='mult' || x.type==='add');
+      const e = weightedPick(positives.length ? positives : list);
+      const w = rnd(110, 140);
+      const x = rnd(ROAD_L + 22, ROAD_R - 22 - w);
+      gates.push({
+        id: 'g' + gateSeq++, x, y, e, w, h: 46, born: ts, ttl, alpha: 0,
+        hitCount: 0, vy: rnd(-0.04, 0.04), vx: rnd(-0.12, 0.12), shake: 0,
+      });
     }
-
-    const w = rnd(92, 120);
-    const gap = rnd(34, 56);
-    const center = rnd(ROAD_L + 145, ROAD_R - 145);
-    let x1 = clamp(center - gap/2 - w, ROAD_L + 16, ROAD_R - 16 - w);
-    let x2 = clamp(center + gap/2, ROAD_L + 16, ROAD_R - 16 - w);
-    if (x2 - (x1+w) < 24) { x1 = ROAD_L + 50; x2 = ROAD_R - 50 - w; }
-
-    const common = { y, w, h:46, born:ts, ttl, alpha:0, hitCount:0, vy:rnd(-0.04,0.04), shake:0 };
-    gates.push({ id:'g'+gateSeq++, x:x1, e:a, vx:rnd(-0.10,0.10), ...common });
-    gates.push({ id:'g'+gateSeq++, x:x2, e:b, vx:rnd(-0.10,0.10), ...common });
-    slot.next = ts + ttl + rnd(900, 1800);
+    nextGateSpawn = ts + rnd(1100, 2400);
   }
 
   function updateGateLifecycle(ts, f){
-    for (const slot of gateSlots){
-      if (ts >= slot.next) spawnGateSet(slot, ts);
-    }
+    if (ts >= nextGateSpawn && gates.length < MAX_GATES) spawnGate(ts);
     for (const g of gates){
       const age = ts - g.born;
       const fadeIn = clamp(age / 360, 0, 1);
