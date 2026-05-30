@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>Lemonade Stand · 레모네이드 가게</title>
+<style>
+  :root{
+    --bg:#FDF8EE; --panel:#FFFFFF; --ink:#0A0A0A; --sub:#666666;
+    --line:#E8E0D2; --gold:#D4A843; --green:#2C7A4D; --green2:#1E5B38;
+    --red:#D34234; --blue:#1F6FEB; --cream:#FBF3DD; --lemon:#F2C94C;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{min-height:100%;background:var(--bg);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans KR",sans-serif;color:var(--ink);}
+  body{display:flex;align-items:flex-start;justify-content:center;padding:14px 12px;-webkit-tap-highlight-color:transparent;}
+  .app{width:min(100%,440px);display:flex;flex-direction:column;gap:10px;}
+  .top{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:14px;box-shadow:0 8px 24px rgba(10,10,10,.08)}
+  .brand{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+  .brand h1{font-size:21px;letter-spacing:-.04em;font-weight:950;line-height:1.05}
+  .brand .tag{font-size:11px;color:var(--sub);font-weight:900;letter-spacing:.1em;text-transform:uppercase}
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+  .stat{background:var(--cream);border:1px solid var(--line);border-radius:12px;padding:8px 4px;text-align:center}
+  .stat .label{font-size:10px;color:var(--sub);font-weight:850;letter-spacing:-.02em}
+  .stat .value{font-size:17px;font-weight:950;letter-spacing:-.03em;font-variant-numeric:tabular-nums;margin-top:1px}
+  .stat.cash .value{color:var(--green)}
+  .stat.goal .value{color:var(--gold)}
+  .stat.day .value{color:var(--blue)}
+
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:16px;box-shadow:0 8px 24px rgba(10,10,10,.06)}
+  .scene{background:linear-gradient(180deg,#BFE3F2 0%,#E9F4DA 70%);border-radius:14px;padding:16px;text-align:center;margin-bottom:14px;position:relative;overflow:hidden}
+  .weather-emoji{font-size:54px;line-height:1}
+  .weather-text{font-size:14px;font-weight:900;color:var(--ink);margin-top:4px}
+  .weather-sub{font-size:12px;color:var(--sub);font-weight:700;margin-top:2px}
+  .stand{font-size:30px;margin-top:6px}
+
+  h2{font-size:16px;font-weight:950;letter-spacing:-.03em;margin-bottom:12px;display:flex;align-items:center;gap:6px}
+  .row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+  .row .rlabel{font-size:14px;font-weight:800}
+  .row .rsub{font-size:11px;color:var(--sub);font-weight:700}
+  .stepper{display:flex;align-items:center;gap:8px}
+  .stepper button{width:38px;height:38px;border-radius:11px;border:1px solid var(--ink);background:var(--panel);font-size:20px;font-weight:950;cursor:pointer;color:var(--ink);touch-action:manipulation}
+  .stepper button:active{background:var(--ink);color:#fff}
+  .stepper .num{min-width:62px;text-align:center;font-size:18px;font-weight:950;font-variant-numeric:tabular-nums}
+  .cost-line{font-size:12px;color:var(--sub);font-weight:800;text-align:right;margin-top:-6px;margin-bottom:12px}
+  .cost-line strong{color:var(--ink)}
+
+  .btn-main{appearance:none;border:0;border-radius:14px;background:var(--ink);color:#fff;padding:14px 16px;width:100%;font-weight:950;font-size:16px;letter-spacing:-.02em;cursor:pointer;touch-action:manipulation}
+  .btn-main:active{transform:translateY(1px)}
+  .btn-main:disabled{opacity:.4;cursor:not-allowed}
+  .btn-ghost{appearance:none;border:1px solid var(--ink);background:transparent;border-radius:13px;padding:11px;width:100%;font-weight:900;font-size:13px;color:var(--ink);cursor:pointer;margin-top:8px}
+
+  .tip{background:var(--cream);border-radius:12px;padding:10px 12px;font-size:12px;line-height:1.5;color:#5A4A28;font-weight:700;margin-top:10px}
+  .tip b{color:var(--ink)}
+
+  /* Result */
+  .result-line{display:flex;justify-content:space-between;align-items:baseline;padding:9px 0;border-bottom:1px dashed var(--line);font-size:14px;font-weight:800}
+  .result-line:last-of-type{border-bottom:0}
+  .result-line .v{font-variant-numeric:tabular-nums;font-weight:950}
+  .result-line.profit .v{font-size:22px;color:var(--green)}
+  .result-line.loss .v{font-size:22px;color:var(--red)}
+  .sell-anim{font-size:13px;color:var(--sub);font-weight:800;text-align:center;margin:6px 0 12px;min-height:18px}
+
+  .overlay{position:fixed;inset:0;background:rgba(10,10,10,.78);display:none;align-items:center;justify-content:center;padding:20px;z-index:20}
+  .overlay.show{display:flex}
+  .ocard{width:min(100%,330px);background:var(--panel);border-radius:22px;border:2px solid var(--gold);padding:24px 20px;text-align:center;box-shadow:0 18px 44px rgba(0,0,0,.3)}
+  .ocard .eyebrow{font-size:12px;font-weight:950;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin-bottom:8px}
+  .ocard h2{font-size:25px;letter-spacing:-.05em;justify-content:center;margin-bottom:10px}
+  .ocard p{font-size:14px;line-height:1.6;color:var(--sub);font-weight:700;margin-bottom:16px}
+  .ocard p strong{color:var(--ink);font-weight:950}
+  .footer{text-align:center;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--sub);font-weight:850;padding-top:2px}
+  .hidden{display:none!important}
+</style>
+</head>
+<body>
+<div class="app">
+  <section class="top">
+    <div class="brand">
+      <h1>레모네이드 가게</h1>
+      <div class="tag">Game · No. 19</div>
+    </div>
+    <div class="stats">
+      <div class="stat day"><div class="label">날짜</div><div class="value" id="dayEl">1 / 7</div></div>
+      <div class="stat cash"><div class="label">내 돈</div><div class="value" id="cashEl">5,000</div></div>
+      <div class="stat goal"><div class="label">목표</div><div class="value" id="goalEl">40,000</div></div>
+    </div>
+  </section>
+
+  <!-- PLAN PHASE -->
+  <section class="panel" id="planPanel">
+    <div class="scene">
+      <div class="weather-emoji" id="wEmoji">☀️</div>
+      <div class="weather-text" id="wText">맑음</div>
+      <div class="weather-sub" id="wSub">더운 날엔 레모네이드가 잘 팔려요!</div>
+      <div class="stand">🍋🥤</div>
+    </div>
+
+    <h2>🛒 오늘 장사 준비</h2>
+
+    <div class="row">
+      <div><div class="rlabel">레모네이드 만들기</div><div class="rsub">한 잔 재료비 <b id="unitCostLbl">700</b>원</div></div>
+      <div class="stepper">
+        <button id="cupMinus">−</button>
+        <div class="num"><span id="cupNum">10</span>잔</div>
+        <button id="cupPlus">+</button>
+      </div>
+    </div>
+    <div class="cost-line">재료비 합계 <strong id="totalCost">7,000</strong>원</div>
+
+    <div class="row">
+      <div><div class="rlabel">한 잔 판매 가격</div><div class="rsub">너무 비싸면 손님이 줄어요</div></div>
+      <div class="stepper">
+        <button id="priceMinus">−</button>
+        <div class="num"><span id="priceNum">1,500</span></div>
+        <button id="pricePlus">+</button>
+      </div>
+    </div>
+
+    <button class="btn-main" id="openBtn">가게 열기 ▶</button>
+    <div class="tip" id="tipBox">💡 <b>이익</b> = 판 돈 − 재료비. 날씨와 가격을 보고 몇 잔 만들지 정해보세요!</div>
+  </section>
+
+  <!-- RESULT PHASE -->
+  <section class="panel hidden" id="resultPanel">
+    <h2 id="resultTitle">📊 오늘의 결산</h2>
+    <div class="sell-anim" id="sellAnim"></div>
+    <div class="result-line"><span>만든 레모네이드</span><span class="v" id="rMade">10잔</span></div>
+    <div class="result-line"><span>판매한 잔 수</span><span class="v" id="rSold">8잔</span></div>
+    <div class="result-line"><span>판 돈 (매출)</span><span class="v" id="rRevenue">+12,000원</span></div>
+    <div class="result-line"><span>재료비 (비용)</span><span class="v" id="rCost">−7,000원</span></div>
+    <div class="result-line profit" id="profitLine"><span>오늘 이익</span><span class="v" id="rProfit">+5,000원</span></div>
+    <button class="btn-main" id="nextBtn" style="margin-top:14px;">다음 날 ▶</button>
+  </section>
+
+  <div class="footer">— Min1 Park · 2026 —</div>
+</div>
+
+<!-- Start / End overlay -->
+<div class="overlay show" id="overlay">
+  <div class="ocard">
+    <div class="eyebrow" id="ovEyebrow">Ready</div>
+    <h2 id="ovTitle">레모네이드 가게</h2>
+    <p id="ovBody">
+      7일 동안 레모네이드를 팔아 <strong>목표 금액 40,000원</strong>을 모아보세요!<br><br>
+      매일 <strong>날씨</strong>를 보고 — 몇 잔 만들지, 얼마에 팔지 정합니다.<br>
+      더운 날은 많이 팔리고, 비 오는 날은 적게 팔려요.<br>
+      <strong>이익 = 판 돈 − 재료비</strong> 를 기억하세요!
+    </p>
+    <button class="btn-main" id="ovBtn">시작</button>
+  </div>
+</div>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const dayEl = $('dayEl'), cashEl = $('cashEl'), goalEl = $('goalEl');
+  const wEmoji = $('wEmoji'), wText = $('wText'), wSub = $('wSub');
+  const cupNum = $('cupNum'), priceNum = $('priceNum');
+  const unitCostLbl = $('unitCostLbl'), totalCost = $('totalCost');
+  const planPanel = $('planPanel'), resultPanel = $('resultPanel');
+  const tipBox = $('tipBox');
+  const overlay = $('overlay'), ovEyebrow = $('ovEyebrow'), ovTitle = $('ovTitle'), ovBody = $('ovBody'), ovBtn = $('ovBtn');
+
+  const TOTAL_DAYS = 7;
+  const GOAL = 40000;
+  const START_CASH = 5000;
+
+  // Weather: multiplier on demand, plus a base unit cost that can vary slightly
+  const WEATHERS = [
+    { key:'hot',   emoji:'🔥', text:'매우 더움', sub:'레모네이드가 불티나게 팔려요!', demand:1.7,  unit:750 },
+    { key:'sunny', emoji:'☀️', text:'맑음',      sub:'더운 날엔 레모네이드가 잘 팔려요!', demand:1.3,  unit:700 },
+    { key:'cloud', emoji:'⛅', text:'구름 조금',  sub:'평범한 날이에요.', demand:1.0,  unit:700 },
+    { key:'cool',  emoji:'🌥️', text:'쌀쌀함',    sub:'손님이 조금 적을 수 있어요.', demand:0.7,  unit:680 },
+    { key:'rain',  emoji:'🌧️', text:'비',        sub:'비 오는 날은 손님이 적어요.', demand:0.45, unit:650 },
+  ];
+
+  let day, cash, cups, price, weather, weatherIdx;
+
+  function fmt(n){ return n.toLocaleString('ko-KR'); }
+
+  function pickWeather(){
+    // weighted toward middle weather
+    const r = Math.random();
+    if (r < 0.18) weatherIdx = 0;
+    else if (r < 0.45) weatherIdx = 1;
+    else if (r < 0.72) weatherIdx = 2;
+    else if (r < 0.88) weatherIdx = 3;
+    else weatherIdx = 4;
+    weather = WEATHERS[weatherIdx];
+  }
+
+  function newGame(){
+    day = 1; cash = START_CASH;
+    cups = 10; price = 1500;
+    startDay();
+    overlay.classList.remove('show');
+  }
+
+  function startDay(){
+    pickWeather();
+    // default suggestion adapts to weather a little (kids can still change)
+    cups = Math.max(5, Math.round(10 * weather.demand));
+    price = 1500;
+    // affordability: clamp cups to what cash allows
+    clampCups();
+    renderPlan();
+    planPanel.classList.remove('hidden');
+    resultPanel.classList.add('hidden');
+  }
+
+  function unitCost(){ return weather.unit; }
+  function clampCups(){
+    const maxByCash = Math.floor(cash / unitCost());
+    cups = Math.min(cups, Math.max(0, maxByCash));
+    if (cups < 0) cups = 0;
+  }
+
+  function renderPlan(){
+    dayEl.textContent = day + ' / ' + TOTAL_DAYS;
+    cashEl.textContent = fmt(cash);
+    goalEl.textContent = fmt(GOAL);
+    wEmoji.textContent = weather.emoji;
+    wText.textContent = weather.text;
+    wSub.textContent = weather.sub;
+    unitCostLbl.textContent = fmt(unitCost());
+    cupNum.textContent = cups;
+    priceNum.textContent = fmt(price);
+    totalCost.textContent = fmt(cups * unitCost());
+    // dynamic tip
+    if (price > 2500) tipBox.innerHTML = '💡 가격이 <b>조금 비싼</b> 편이에요. 손님이 줄 수 있어요.';
+    else if (price < 1000) tipBox.innerHTML = '💡 가격이 <b>싸서</b> 많이 팔리지만 한 잔 이익이 적어요.';
+    else tipBox.innerHTML = '💡 <b>이익</b> = 판 돈 − 재료비. 날씨를 보고 몇 잔 만들지 정해요!';
+    $('openBtn').disabled = (cups <= 0);
+  }
+
+  // ===== Demand model =====
+  // Base customers depend on weather. Higher price reduces how many actually buy.
+  function simulateSales(){
+    // "ideal" price where most people buy is ~1500. Demand falls as price rises.
+    const baseCustomers = 12 * weather.demand;            // potential buyers
+    // price sensitivity: at 1500 -> factor ~1.0, at 3000 -> ~0.4, at 800 -> ~1.25(capped)
+    let priceFactor = 1.6 - (price / 1500) * 0.6;
+    priceFactor = Math.max(0.1, Math.min(1.3, priceFactor));
+    let wanted = baseCustomers * priceFactor;
+    // small randomness
+    wanted *= (0.85 + Math.random() * 0.3);
+    let sold = Math.min(cups, Math.round(wanted));
+    sold = Math.max(0, sold);
+    return sold;
+  }
+
+  function openShop(){
+    if (cups <= 0) return;
+    const spent = cups * unitCost();
+    cash -= spent;                       // pay for ingredients now
+    const sold = simulateSales();
+    const revenue = sold * price;
+    cash += revenue;
+    const profit = revenue - spent;
+
+    // fill result panel
+    $('rMade').textContent = cups + '잔';
+    $('rSold').textContent = sold + '잔';
+    $('rRevenue').textContent = '+' + fmt(revenue) + '원';
+    $('rCost').textContent = '−' + fmt(spent) + '원';
+    const profitLine = $('profitLine');
+    $('rProfit').textContent = (profit >= 0 ? '+' : '−') + fmt(Math.abs(profit)) + '원';
+    profitLine.className = 'result-line ' + (profit >= 0 ? 'profit' : 'loss');
+
+    // commentary
+    let title, anim;
+    const sellRate = cups > 0 ? sold / cups : 0;
+    if (sold === 0) { title = '📊 오늘의 결산'; anim = '오늘은 손님이 없었어요… 😢'; }
+    else if (sellRate >= 0.99) { title = '📊 완판! 🎉'; anim = '만든 레모네이드를 다 팔았어요! 더 만들 걸 그랬나요?'; }
+    else if (sellRate >= 0.6) { title = '📊 오늘의 결산'; anim = '꽤 잘 팔았어요! 👍'; }
+    else { title = '📊 오늘의 결산'; anim = '레모네이드가 많이 남았어요. 다음엔 적게 만들어볼까요?'; }
+    $('resultTitle').textContent = title;
+    $('sellAnim').textContent = anim;
+
+    cashEl.textContent = fmt(cash);
+    planPanel.classList.add('hidden');
+    resultPanel.classList.remove('hidden');
+  }
+
+  function nextDay(){
+    if (day >= TOTAL_DAYS) return endGame();
+    day++;
+    startDay();
+  }
+
+  function endGame(){
+    const reached = cash >= GOAL;
+    overlay.classList.add('show');
+    ovEyebrow.textContent = reached ? 'Success' : 'Game Over';
+    ovTitle.textContent = reached ? '🎉 목표 달성!' : '아쉬워요!';
+    if (reached) {
+      ovBody.innerHTML = `7일 동안 <strong>${fmt(cash)}원</strong>을 모았어요!<br>목표 <strong>${fmt(GOAL)}원</strong>을 넘었습니다. 멋진 사장님이네요! 👏`;
+    } else {
+      ovBody.innerHTML = `7일 동안 <strong>${fmt(cash)}원</strong>을 모았어요.<br>목표는 <strong>${fmt(GOAL)}원</strong>이었어요.<br>날씨를 잘 보고 가격을 정하면 더 잘 모을 수 있어요!`;
+    }
+    ovBtn.textContent = '다시 하기';
+    ovBtn.onclick = newGame;
+  }
+
+  // ===== Steppers =====
+  $('cupPlus').onclick = () => { const max = Math.floor(cash / unitCost()); cups = Math.min(max, cups + 5); renderPlan(); };
+  $('cupMinus').onclick = () => { cups = Math.max(0, cups - 5); renderPlan(); };
+  $('pricePlus').onclick = () => { price = Math.min(4000, price + 250); renderPlan(); };
+  $('priceMinus').onclick = () => { price = Math.max(500, price - 250); renderPlan(); };
+  $('openBtn').onclick = openShop;
+  $('nextBtn').onclick = nextDay;
+  ovBtn.onclick = newGame;
+
+  // ===== Boot =====
+  newGame();
+  overlay.classList.add('show');
+  ovEyebrow.textContent = 'Ready';
+  ovTitle.textContent = '레모네이드 가게';
+  ovBody.innerHTML = '7일 동안 레모네이드를 팔아 <strong>목표 40,000원</strong>을 모아보세요!<br><br>매일 <strong>날씨</strong>를 보고 몇 잔 만들지, 얼마에 팔지 정합니다.<br>더운 날은 많이 팔리고, 비 오는 날은 적게 팔려요.<br><strong>이익 = 판 돈 − 재료비</strong>!';
+  ovBtn.textContent = '시작';
+})();
+</script>
+</body>
+</html>
