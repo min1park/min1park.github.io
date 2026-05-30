@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Othello · 오델로</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=Noto+Serif+KR:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F5F1EA; --bg-elev: #FBF8F2; --ink: #1B365D; --ink-soft: #5A6B82;
+    --line: #D4CCBC; --gold: #B8935A;
+    --board-light: #4F8C6A; --board-dark: #3B6C50; --board-edge: #2A4D38;
+    --black: #1A1A1A; --white: #FBF8F2; --disc-shadow: rgba(0,0,0,0.35);
+    --hint: rgba(184,147,90,0.45); --last: rgba(184,147,90,0.6);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    font-family: "EB Garamond", "Noto Serif KR", Georgia, serif; background: var(--bg);
+    background-image: radial-gradient(circle at 20% 10%, rgba(184,147,90,0.06), transparent 40%), radial-gradient(circle at 80% 90%, rgba(27,54,93,0.05), transparent 40%);
+    color: var(--ink); min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    padding: 18px 12px; -webkit-font-smoothing: antialiased; -webkit-tap-highlight-color: transparent; touch-action: manipulation;
+  }
+  .frame { width: 100%; max-width: 440px; }
+  .header { text-align: center; margin-bottom: 14px; }
+  .eyebrow { font-size: 0.7rem; letter-spacing: 0.35em; text-transform: uppercase; color: var(--ink-soft); margin-bottom: 6px; }
+  .title { font-family: "EB Garamond", serif; font-style: italic; font-weight: 500; font-size: 2.2rem; line-height: 1; }
+  .title::after { content: ""; display: block; width: 32px; height: 1px; background: var(--gold); margin: 12px auto 0; }
+
+  .modes, .difficulty { display: flex; gap: 0; margin-bottom: 8px; border: 1px solid var(--line); background: var(--bg-elev); }
+  .difficulty.hidden { display: none; }
+  .mode-btn, .diff-btn {
+    flex: 1; padding: 9px 6px; background: transparent; border: none; color: var(--ink-soft);
+    font-family: inherit; font-size: 0.82rem; letter-spacing: 0.05em; cursor: pointer; transition: all 0.2s ease;
+  }
+  .mode-btn + .mode-btn, .diff-btn + .diff-btn { border-left: 1px solid var(--line); }
+  .mode-btn.active { background: var(--ink); color: var(--bg-elev); }
+  .diff-btn.active { background: var(--gold); color: var(--bg-elev); }
+
+  .score {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--line);
+    border: 1px solid var(--line); margin-bottom: 8px;
+  }
+  .score-cell { background: var(--bg-elev); padding: 9px 6px; text-align: center; display: flex; align-items: center; justify-content: center; gap: 8px; }
+  .score-cell .glyph { width: 18px; height: 18px; border-radius: 50%; }
+  .score-cell.b .glyph { background: var(--black); }
+  .score-cell.w .glyph { background: var(--white); border: 1px solid #aaa; }
+  .score-cell .value { font-family: "EB Garamond", serif; font-size: 1.2rem; font-weight: 500; font-variant-numeric: tabular-nums; }
+  .score-cell.b.turn, .score-cell.w.turn { background: #fff8e8; outline: 1px solid var(--gold); outline-offset: -1px; }
+
+  .status { text-align: center; font-size: 0.9rem; font-style: italic; color: var(--ink-soft); min-height: 22px; margin: 8px 0; letter-spacing: 0.02em; }
+  .status.pass { color: var(--gold); font-style: normal; }
+  .status.over { color: var(--ink); font-style: normal; font-weight: 500; letter-spacing: 0.08em; }
+
+  .board-wrap { position: relative; aspect-ratio: 1; border: 2px solid var(--board-edge); background: var(--board-dark); padding: 4px; box-shadow: 0 6px 18px rgba(60,40,20,0.18); margin-bottom: 12px; }
+  .board { width: 100%; height: 100%; display: grid; grid-template-columns: repeat(8, 1fr); grid-template-rows: repeat(8, 1fr); gap: 1px; background: var(--board-edge); }
+  .sq {
+    position: relative; display: flex; align-items: center; justify-content: center;
+    cursor: pointer; border: none; padding: 0; -webkit-tap-highlight-color: transparent; overflow: hidden;
+  }
+  .sq.light { background: var(--board-light); }
+  .sq.dark { background: var(--board-dark); }
+  .sq:disabled { cursor: default; }
+  .sq.last::before { content: ''; position: absolute; inset: 6%; border: 2px solid var(--last); border-radius: 50%; pointer-events: none; }
+  .disc { width: 82%; aspect-ratio: 1; border-radius: 50%; box-shadow: 0 2px 3px var(--disc-shadow); position: relative; }
+  .disc.B { background: radial-gradient(circle at 36% 32%, #4a4a4a, #1A1A1A 65%); }
+  .disc.W { background: radial-gradient(circle at 36% 32%, #FFFFFF, #d6d6d6 80%); border: 1px solid #aaa; }
+  .hint-dot { width: 24%; aspect-ratio: 1; border-radius: 50%; background: var(--hint); }
+  /* Corner markers (star points like Go boards have) */
+  .sq::after {
+    content: ''; position: absolute; width: 6px; height: 6px; border-radius: 50%; background: rgba(0,0,0,0.45); pointer-events: none;
+  }
+  .sq.dot::after { right: -3px; bottom: -3px; }
+  .sq:not(.dot)::after { display: none; }
+
+  .overlay { position: absolute; inset: 0; background: rgba(27,54,93,0.82); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); display: none; align-items: center; justify-content: center; padding: 18px; z-index: 10; animation: fadeIn 0.3s ease; }
+  .overlay.show { display: flex; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  .overlay-card { background: var(--bg-elev); border: 1px solid var(--gold); padding: 22px 18px; text-align: center; max-width: 300px; width: 100%; position: relative; }
+  .overlay-card::before, .overlay-card::after { content: ""; position: absolute; width: 16px; height: 16px; border: 1px solid var(--gold); }
+  .overlay-card::before { top: -1px; left: -1px; border-right: none; border-bottom: none; }
+  .overlay-card::after { bottom: -1px; right: -1px; border-left: none; border-top: none; }
+  .overlay-eyebrow { font-size: 0.62rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--ink-soft); margin-bottom: 7px; }
+  .overlay-title { font-family: "EB Garamond", serif; font-size: 1.5rem; color: var(--ink); margin-bottom: 14px; line-height: 1.2; }
+  .overlay-btn { width: 100%; padding: 11px; border: 1px solid var(--ink); background: var(--ink); color: var(--bg-elev); font-family: inherit; font-size: 0.82rem; letter-spacing: 0.15em; text-transform: uppercase; cursor: pointer; }
+  .overlay-btn:hover { background: var(--gold); border-color: var(--gold); }
+
+  .controls-meta { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin-bottom: 10px; }
+  .btn { padding: 11px 6px; background: transparent; border: 1px solid var(--ink); color: var(--ink); font-family: inherit; font-size: 0.78rem; letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer; transition: all 0.2s ease; }
+  .btn:hover, .btn:active { background: var(--ink); color: var(--bg-elev); }
+  .btn.subtle { border-color: var(--line); color: var(--ink-soft); }
+  .btn.subtle:hover { background: var(--ink-soft); color: var(--bg-elev); }
+  .btn:disabled { opacity: 0.35; cursor: not-allowed; }
+  .btn:disabled:hover { background: transparent; color: var(--ink); }
+
+  .hint { text-align: center; font-size: 0.7rem; color: var(--ink-soft); letter-spacing: 0.04em; line-height: 1.6; }
+  .footer { text-align: center; margin-top: 14px; font-size: 0.7rem; letter-spacing: 0.15em; color: var(--ink-soft); text-transform: uppercase; }
+</style>
+</head>
+<body>
+  <div class="frame">
+    <header class="header">
+      <div class="eyebrow">Game · No. 16</div>
+      <h1 class="title">Othello</h1>
+    </header>
+
+    <div class="modes" role="tablist">
+      <button class="mode-btn active" data-mode="ai">vs 컴퓨터</button>
+      <button class="mode-btn" data-mode="2p">2인 플레이</button>
+    </div>
+    <div class="difficulty" id="difficultyBar" role="tablist">
+      <button class="diff-btn" data-diff="easy">쉬움</button>
+      <button class="diff-btn active" data-diff="medium">보통</button>
+      <button class="diff-btn" data-diff="hard">어려움</button>
+    </div>
+
+    <div class="score">
+      <div class="score-cell b turn" id="scoreB"><div class="glyph"></div><div class="value">2</div></div>
+      <div class="score-cell w" id="scoreW"><div class="glyph"></div><div class="value">2</div></div>
+    </div>
+
+    <div class="status" id="status">검은 돌(●) 차례</div>
+
+    <div class="board-wrap">
+      <div class="board" id="board"></div>
+      <div class="overlay" id="overlay">
+        <div class="overlay-card">
+          <div class="overlay-eyebrow" id="ovEyebrow">Result</div>
+          <div class="overlay-title" id="ovTitle">게임 종료</div>
+          <div id="ovBody"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="controls-meta">
+      <button class="btn" id="newGameBtn">새 게임</button>
+      <button class="btn subtle" id="passBtn">패스</button>
+      <button class="btn subtle" id="undoBtn">한 수 무르기</button>
+    </div>
+    <div class="hint">유효한 자리를 점으로 표시 · 같은 색 사이에 낀 상대 돌은 모두 뒤집힙니다</div>
+    <div class="footer">— Min1 Park · 2026 —</div>
+  </div>
+
+<script>
+  // ===== Engine =====
+  const SIZE = 8;
+  const DIRS = [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]];
+  const enemy = c => c === 'B' ? 'W' : 'B';
+
+  function initialBoard() {
+    const b = new Array(64).fill('');
+    b[27] = 'W'; b[28] = 'B'; b[35] = 'B'; b[36] = 'W';
+    return b;
+  }
+  function flipsFor(board, sq, color) {
+    if (board[sq]) return [];
+    const opp = enemy(color);
+    const r0 = sq >> 3, c0 = sq & 7;
+    const captures = [];
+    for (const [dr, dc] of DIRS) {
+      let r = r0 + dr, c = c0 + dc;
+      const line = [];
+      while (r >= 0 && r < SIZE && c >= 0 && c < SIZE) {
+        const i = r * 8 + c;
+        if (board[i] === opp) { line.push(i); r += dr; c += dc; }
+        else if (board[i] === color) { if (line.length) captures.push(...line); break; }
+        else break;
+      }
+    }
+    return captures;
+  }
+  function legalMoves(board, color) {
+    const out = {};
+    for (let sq = 0; sq < 64; sq++) {
+      if (board[sq]) continue;
+      const flips = flipsFor(board, sq, color);
+      if (flips.length) out[sq] = flips;
+    }
+    return out;
+  }
+  function applyMove(board, sq, color) {
+    const nb = board.slice();
+    const flips = flipsFor(board, sq, color);
+    nb[sq] = color;
+    for (const i of flips) nb[i] = color;
+    return nb;
+  }
+  function countDiscs(board) {
+    let B = 0, W = 0;
+    for (const v of board) { if (v === 'B') B++; else if (v === 'W') W++; }
+    return { B, W };
+  }
+  function isFull(board) { for (const v of board) if (!v) return false; return true; }
+  function isGameOver(board) {
+    if (isFull(board)) return true;
+    return Object.keys(legalMoves(board, 'B')).length === 0 && Object.keys(legalMoves(board, 'W')).length === 0;
+  }
+
+  // ===== AI =====
+  // Standard positional weights — corners are precious, X-squares are deadly
+  const PST = [
+    120,-20, 20,  5,  5, 20,-20,120,
+    -20,-40, -5, -5, -5, -5,-40,-20,
+     20, -5, 15,  3,  3, 15, -5, 20,
+      5, -5,  3,  3,  3,  3, -5,  5,
+      5, -5,  3,  3,  3,  3, -5,  5,
+     20, -5, 15,  3,  3, 15, -5, 20,
+    -20,-40, -5, -5, -5, -5,-40,-20,
+    120,-20, 20,  5,  5, 20,-20,120,
+  ];
+
+  function evaluate(board, color) {
+    const opp = enemy(color);
+    let pst = 0, mat = 0;
+    for (let sq = 0; sq < 64; sq++) {
+      if (board[sq] === color) { pst += PST[sq]; mat++; }
+      else if (board[sq] === opp) { pst -= PST[sq]; mat--; }
+    }
+    const myMoves = Object.keys(legalMoves(board, color)).length;
+    const oppMoves = Object.keys(legalMoves(board, opp)).length;
+    const mobility = (myMoves - oppMoves) * 8;
+    const total = 64 - board.filter(v => !v).length;
+    // Disc count matters more in endgame, less in midgame
+    const matWeight = total > 50 ? 12 : 1;
+    return pst + mobility + mat * matWeight;
+  }
+
+  function negamax(board, color, depth, alpha, beta) {
+    const moves = legalMoves(board, color);
+    const sqs = Object.keys(moves).map(Number);
+    if (sqs.length === 0) {
+      const oppMoves = legalMoves(board, enemy(color));
+      if (Object.keys(oppMoves).length === 0) {
+        // game over
+        const c = countDiscs(board);
+        const mine = color === 'B' ? c.B : c.W;
+        const theirs = color === 'B' ? c.W : c.B;
+        if (mine > theirs) return 100000;
+        if (mine < theirs) return -100000;
+        return 0;
+      }
+      return -negamax(board, enemy(color), depth - 1, -beta, -alpha);
+    }
+    if (depth === 0) return evaluate(board, color);
+    // order: corners first, x-squares last
+    sqs.sort((a, b) => PST[b] - PST[a]);
+    let best = -Infinity;
+    for (const sq of sqs) {
+      const nb = applyMove(board, sq, color);
+      const score = -negamax(nb, enemy(color), depth - 1, -beta, -alpha);
+      if (score > best) best = score;
+      if (best > alpha) alpha = best;
+      if (alpha >= beta) break;
+    }
+    return best;
+  }
+
+  function aiBestMove(board, color, depth) {
+    const moves = legalMoves(board, color);
+    const sqs = Object.keys(moves).map(Number);
+    if (sqs.length === 0) return null;
+    sqs.sort((a, b) => PST[b] - PST[a]);
+    let best = -Infinity; const scored = [];
+    let alpha = -Infinity;
+    for (const sq of sqs) {
+      const nb = applyMove(board, sq, color);
+      const sc = -negamax(nb, enemy(color), depth - 1, -Infinity, -alpha);
+      scored.push({ sq, sc });
+      if (sc > best) best = sc;
+      if (sc > alpha) alpha = sc;
+    }
+    const near = scored.filter(x => x.sc >= best - 4).map(x => x.sq);
+    return near[Math.floor(Math.random() * near.length)];
+  }
+
+  // ===== UI state =====
+  let board = initialBoard();
+  let turn = 'B';
+  let history = [];
+  let lastMove = -1;
+  let mode = 'ai';
+  let difficulty = 'medium';
+  let gameStatus = 'playing';
+  let busy = false;
+
+  const boardEl = document.getElementById('board');
+  const statusEl = document.getElementById('status');
+  const overlay = document.getElementById('overlay');
+  const ovEyebrow = document.getElementById('ovEyebrow');
+  const ovTitle = document.getElementById('ovTitle');
+  const ovBody = document.getElementById('ovBody');
+  const scoreBEl = document.getElementById('scoreB');
+  const scoreWEl = document.getElementById('scoreW');
+  const newGameBtn = document.getElementById('newGameBtn');
+  const passBtn = document.getElementById('passBtn');
+  const undoBtn = document.getElementById('undoBtn');
+  const difficultyBar = document.getElementById('difficultyBar');
+
+  let cells = [];
+  function buildBoard() {
+    boardEl.innerHTML = ''; cells = [];
+    for (let sq = 0; sq < 64; sq++) {
+      const r = sq >> 3, c = sq & 7;
+      const cell = document.createElement('button');
+      cell.className = 'sq ' + ((r + c) % 2 === 0 ? 'light' : 'dark');
+      // small star-point at certain intersections (decorative)
+      if ((r === 1 || r === 5) && (c === 1 || c === 5)) cell.classList.add('dot');
+      cell.dataset.sq = sq;
+      cell.addEventListener('click', () => onCell(sq));
+      boardEl.appendChild(cell);
+      cells.push(cell);
+    }
+  }
+
+  function render() {
+    const moves = (gameStatus === 'playing' && (mode === '2p' || turn === 'B') && !busy)
+      ? legalMoves(board, turn) : {};
+    const targets = new Set(Object.keys(moves).map(Number));
+    for (let sq = 0; sq < 64; sq++) {
+      const cell = cells[sq];
+      const r = sq >> 3, c = sq & 7;
+      let cls = 'sq ' + ((r + c) % 2 === 0 ? 'light' : 'dark');
+      if ((r === 1 || r === 5) && (c === 1 || c === 5)) cls += ' dot';
+      if (sq === lastMove) cls += ' last';
+      cell.className = cls;
+      const v = board[sq];
+      let inner = '';
+      if (v) inner = `<span class="disc ${v}"></span>`;
+      else if (targets.has(sq)) inner = `<span class="hint-dot"></span>`;
+      cell.innerHTML = inner;
+      cell.disabled = gameStatus !== 'playing' || busy || !!v || !targets.has(sq);
+    }
+    const c = countDiscs(board);
+    scoreBEl.querySelector('.value').textContent = c.B;
+    scoreWEl.querySelector('.value').textContent = c.W;
+    scoreBEl.classList.toggle('turn', turn === 'B' && gameStatus === 'playing');
+    scoreWEl.classList.toggle('turn', turn === 'W' && gameStatus === 'playing');
+    passBtn.disabled = !canPassNow();
+    undoBtn.disabled = history.length === 0 || busy;
+  }
+
+  function canPassNow() {
+    if (gameStatus !== 'playing' || busy) return false;
+    if (mode === 'ai' && turn !== 'B') return false;
+    return Object.keys(legalMoves(board, turn)).length === 0;
+  }
+
+  function setStatus() {
+    if (gameStatus === 'over') return;
+    let txt;
+    if (busy && mode === 'ai') txt = '컴퓨터가 생각 중…';
+    else if (turn === 'B') txt = '검은 돌(●) 차례';
+    else txt = '흰 돌(○) 차례';
+    if (gameStatus === 'playing' && Object.keys(legalMoves(board, turn)).length === 0) {
+      txt = (turn === 'B' ? '검은 돌' : '흰 돌') + ' 둘 곳이 없습니다 · 패스';
+      statusEl.className = 'status pass';
+    } else {
+      statusEl.className = 'status';
+    }
+    statusEl.textContent = txt;
+  }
+
+  function onCell(sq) {
+    if (gameStatus !== 'playing' || busy) return;
+    if (mode === 'ai' && turn !== 'B') return;
+    const flips = flipsFor(board, sq, turn);
+    if (flips.length === 0) return;
+    playMove(sq);
+  }
+
+  function playMove(sq) {
+    history.push({ board: board.slice(), turn, lastMove });
+    board = applyMove(board, sq, turn);
+    lastMove = sq;
+    turn = enemy(turn);
+    afterMove();
+  }
+
+  function afterMove() {
+    render();
+    if (isGameOver(board)) return endGame();
+    setStatus();
+    // If current player has no moves, auto-pass after a beat
+    if (Object.keys(legalMoves(board, turn)).length === 0) {
+      // skip turn
+      busy = true; render();
+      setTimeout(() => {
+        history.push({ board: board.slice(), turn, lastMove }); // record pass for undo
+        turn = enemy(turn);
+        busy = false;
+        if (isGameOver(board)) return endGame();
+        setStatus();
+        render();
+        if (mode === 'ai' && turn === 'W') aiTurn();
+      }, 700);
+      return;
+    }
+    if (mode === 'ai' && turn === 'W') aiTurn();
+  }
+
+  function aiTurn() {
+    if (gameStatus !== 'playing') return;
+    busy = true; setStatus(); render();
+    setTimeout(() => {
+      let sq;
+      if (difficulty === 'easy') {
+        const sqs = Object.keys(legalMoves(board, 'W')).map(Number);
+        sq = Math.random() < 0.3 ? sqs[(Math.random() * sqs.length) | 0] : aiBestMove(board, 'W', 1);
+      } else if (difficulty === 'hard') {
+        sq = aiBestMove(board, 'W', 4);
+      } else {
+        sq = aiBestMove(board, 'W', 2);
+      }
+      busy = false;
+      if (sq != null) {
+        history.push({ board: board.slice(), turn, lastMove });
+        board = applyMove(board, sq, 'W');
+        lastMove = sq;
+        turn = 'B';
+      }
+      afterMove();
+    }, 650);
+  }
+
+  function endGame() {
+    gameStatus = 'over';
+    const c = countDiscs(board);
+    let title, msg;
+    if (c.B > c.W) { title = '검은 돌 승리'; msg = `<strong>${c.B}</strong> : ${c.W}`; }
+    else if (c.W > c.B) { title = '흰 돌 승리'; msg = `${c.B} : <strong>${c.W}</strong>`; }
+    else { title = '무승부'; msg = `<strong>${c.B} : ${c.W}</strong>`; }
+    statusEl.textContent = title; statusEl.className = 'status over';
+    render();
+    setTimeout(() => {
+      overlay.classList.add('show');
+      ovEyebrow.textContent = 'Result';
+      ovTitle.textContent = title;
+      ovBody.innerHTML = `<p style="font-size:1rem;color:var(--ink-soft);margin-bottom:14px;">${msg}</p>` +
+        `<button class="overlay-btn" id="ovRestart">새 게임</button>`;
+      document.getElementById('ovRestart').addEventListener('click', newGame);
+    }, 300);
+  }
+
+  function newGame() {
+    board = initialBoard();
+    turn = 'B';
+    history = []; lastMove = -1; gameStatus = 'playing'; busy = false;
+    overlay.classList.remove('show');
+    setStatus();
+    render();
+    if (mode === 'ai' && turn === 'W') aiTurn();
+  }
+
+  function manualPass() {
+    if (!canPassNow()) return;
+    history.push({ board: board.slice(), turn, lastMove });
+    turn = enemy(turn);
+    afterMove();
+  }
+
+  function undo() {
+    if (busy || history.length === 0) return;
+    // In AI mode, undo back to player's turn (pop AI move + own move if applicable)
+    let steps = (mode === 'ai' && history.length >= 2 && turn === 'B') ? 2 : 1;
+    while (steps-- > 0 && history.length > 0) {
+      const h = history.pop();
+      board = h.board; turn = h.turn; lastMove = h.lastMove;
+    }
+    gameStatus = 'playing';
+    overlay.classList.remove('show');
+    setStatus(); render();
+  }
+
+  // ===== Hookups =====
+  document.querySelectorAll('.mode-btn').forEach(btn => btn.addEventListener('click', () => {
+    if (btn.classList.contains('active')) return;
+    document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active'); mode = btn.dataset.mode;
+    difficultyBar.classList.toggle('hidden', mode !== 'ai');
+    newGame();
+  }));
+  document.querySelectorAll('.diff-btn').forEach(btn => btn.addEventListener('click', () => {
+    if (btn.classList.contains('active')) return;
+    document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active'); difficulty = btn.dataset.diff;
+    newGame();
+  }));
+  newGameBtn.addEventListener('click', newGame);
+  passBtn.addEventListener('click', manualPass);
+  undoBtn.addEventListener('click', undo);
+
+  // ===== Boot =====
+  buildBoard();
+  render();
+  setStatus();
+</script>
+</body>
+</html>
