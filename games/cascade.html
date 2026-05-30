@@ -41,7 +41,7 @@
   .card h2{font-size:28px;letter-spacing:-.06em;line-height:1.05;margin-bottom:10px}
   .card p{font-size:14px;line-height:1.6;color:var(--sub);font-weight:650;margin-bottom:16px}
   .card strong{color:var(--ink);font-weight:950}
-  .btn-main{appearance:none;border:0;border-radius:14px;background:var(--ink);color:#fff;padding:13px 16px;width:100%;font-weight:950;font-size:15px;letter-spacing:-.02em;cursor:pointer}
+  .btn-main{appearance:none;border:0;border-radius:14px;background:var(--ink);color:#fff;padding:13px 16px;width:100%;font-weight:950;font-size:15px;letter-spacing:-.02em;cursor:pointer;touch-action:manipulation;position:relative;z-index:2}
   .btn-main:active{transform:translateY(1px)}
   .controls{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
   .btn{appearance:none;border:1px solid var(--ink);background:var(--panel);border-radius:14px;padding:12px 8px;font-size:13px;font-weight:900;color:var(--ink);cursor:pointer}
@@ -594,9 +594,18 @@
     if (e.cancelable) e.preventDefault();
   }
 
-  wrap.addEventListener('pointerdown', e => { wrap.setPointerCapture?.(e.pointerId); setCannonByPointer(e); });
+  // IMPORTANT: only capture the pointer while actually playing, otherwise the
+  // capture swallows tap events on the overlay buttons (시작/재개/다음 스테이지 등).
+  wrap.addEventListener('pointerdown', e => {
+    if (state !== 'playing') return;
+    wrap.setPointerCapture?.(e.pointerId);
+    setCannonByPointer(e);
+  });
   wrap.addEventListener('pointermove', setCannonByPointer);
-  wrap.addEventListener('touchmove', setCannonByPointer, {passive:false});
+  wrap.addEventListener('touchmove', e => {
+    if (state !== 'playing') return;
+    setCannonByPointer(e);
+  }, {passive:false});
 
   window.addEventListener('keydown', e => {
     if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A'){ left = true; e.preventDefault(); }
