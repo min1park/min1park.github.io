@@ -134,9 +134,9 @@
   const ENEMY_Y = 30, ENEMY_H = 56;
   const BLUE_SPEED = 5.5;
   const RED_SPEED = 4.0;
-  const BLUE_SPAWN_MS = 55;
+  const BLUE_SPAWN_MS = 32;       // ~31 spawns/sec for a thick stream
   const STICK_R = 3.2;
-  const MAX_STICK = 260;
+  const MAX_STICK = 600;          // big crowd cap
   const TIME_LIMIT = 60;          // seconds
   const GATE_ROWS_Y = [180, 290, 400];
   const LANES = 3;
@@ -233,13 +233,21 @@
         gates.push({ id: gid++, x, y: GATE_ROWS_Y[r], w, h: 38, effect: effects[c], deactivated: false });
       }
     }
-    enemy.maxHp = 250 + (n - 1) * 200;
+    enemy.maxHp = 500 + (n - 1) * 350;
     enemy.hp = enemy.maxHp;
-    enemy.redSpawnMs = Math.max(80, 220 - (n - 1) * 18);
+    enemy.redSpawnMs = Math.max(50, 140 - (n - 1) * 14);
     enemy.redLastSpawn = 0;
     blues = [];
     reds = [];
     particles = [];
+    // Pre-spawn an initial crowd so the screen is alive from frame 1
+    for (let i = 0; i < 25; i++) {
+      blues.push({
+        x: W / 2 + (Math.random() * 100 - 50),
+        y: SPAWNER_Y - 12 - Math.random() * 60,
+        alive: true,
+      });
+    }
     stageStartMs = performance.now();
     lastBlueSpawn = 0;
     updateUI();
