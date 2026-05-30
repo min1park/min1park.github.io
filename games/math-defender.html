@@ -174,7 +174,8 @@
   const BULLET_SPEED = 8;
   const ENEMY_R = 14;
   const FIRE_RATE = 220;       // ms
-  const KILLS_PER_MATH = 10;
+  const KILLS_PER_MATH = 12;
+  const MATH_MIN_GAP = 18000;  // ms — at least this long between math breaks
 
   const COL = {
     space:'#0A1428', star:'#FFFFFF', ship:'#1F6FEB', shipEdge:'#0F4EB3',
@@ -189,7 +190,7 @@
   let killsSinceMath = 0, totalKills = 0;
   let player = { x: W/2, targetX: W/2, invulUntil: 0 };
   let enemies = [], bullets = [], stars = [], fx = [];
-  let lastTs = 0, lastFire = 0, lastSpawn = 0, pausedAt = 0;
+  let lastTs = 0, lastFire = 0, lastSpawn = 0, pausedAt = 0, lastMathAt = 0;
   let raf = null, left = false, right = false;
   let difficulty = 'medium';
   let problem = null, mathInput = '';
@@ -239,7 +240,7 @@
     state = 'ready';
     stage = 1; score = 0; correctCount = 0;
     lives = 5; bombs = 0;
-    killsSinceMath = 0; totalKills = 0;
+    killsSinceMath = 0; totalKills = 0; lastMathAt = 0;
     enemies = []; bullets = []; fx = [];
     player.x = player.targetX = W/2; player.invulUntil = 0;
     makeStars();
@@ -254,6 +255,7 @@
     state = 'playing';
     overlay.classList.add('hidden');
     lastTs = now(); lastFire = 0; lastSpawn = 0;
+    if (lastMathAt === 0) lastMathAt = now();   // start the math cooldown clock
     if (!raf) raf = requestAnimationFrame(loop);
   }
   function togglePause(){
@@ -267,6 +269,8 @@
       state = 'playing';
       pauseBtn.textContent = '일시정지';
       overlay.classList.add('hidden');
+      const diff = now() - pausedAt;
+      lastMathAt += diff;   // don't let paused time count toward the math cooldown
       lastTs = now();
     }
   }
@@ -318,6 +322,7 @@
       mathOverlay.classList.add('hidden');
       state = 'playing';
       lastTs = now();
+      lastMathAt = now();   // restart cooldown from when the player resumes
     }, 1100);
   }
 
@@ -380,9 +385,10 @@
           killsSinceMath++; totalKills++;
           // small spark
           for (let i=0;i<5;i++) fx.push({type:'spark', x:e.x, y:e.y, vx:rnd(-1.4,1.4), vy:rnd(-1.4,0.4), r:rnd(1.8,3), life:rnd(10,18), color:COL.bullet});
-          // Trigger math break?
-          if (killsSinceMath >= KILLS_PER_MATH) {
+          // Trigger math break only if enough kills AND enough time has passed
+          if (killsSinceMath >= KILLS_PER_MATH && ts - lastMathAt >= MATH_MIN_GAP) {
             killsSinceMath = 0;
+            lastMathAt = ts;
             pauseForMath();
           }
           break;
@@ -590,7 +596,16 @@
   }));
   restartBtn.onclick = reset;
   pauseBtn.onclick = togglePause;
-  bombBtn.addEventListener('click', useBomb);
+  // Bomb: handle on pointerdown and stop the event from bubbling to the
+  // game-wrap (whose pointer capture would otherwise swallow the tap).
+  function bombTrigger(e){
+    e.stopPropagation();
+    if (e.cancelable) e.preventDefault();
+    useBomb();
+  }
+  bombBtn.addEventListener('pointerdown', bombTrigger);
+  bombBtn.addEventListener('touchstart', bombTrigger, { passive: false });
+  bombBtn.addEventListener('click', e => { e.stopPropagation(); });
   ovBtn.onclick = startGame;
 
   // ===== Boot =====
