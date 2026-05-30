@@ -63,7 +63,7 @@
       <div class="stat mob"><div class="label">MOBS</div><div class="value" id="mobEl">0</div></div>
       <div class="stat hp"><div class="label">BASE</div><div class="value" id="hpEl">0</div></div>
       <div class="stat life"><div class="label">LIFE</div><div class="value" id="lifeEl">15</div></div>
-      <div class="stat time"><div class="label">TIME</div><div class="value" id="timeEl">75</div></div>
+      <div class="stat time"><div class="label">TIME</div><div class="value" id="timeEl">90</div></div>
     </div>
   </section>
 
@@ -114,7 +114,7 @@
   const W = 420, H = 680;
   const ROAD_L = 34, ROAD_R = W - 34;
   const CANNON_Y = H - 56;
-  const LIMIT = 75;
+  const LIMIT = 90;        // seconds per stage
   const MAX_MOBS = 420;
   const BASE_Y = 20;
   const BASE_H = 58;
@@ -192,7 +192,7 @@
     enemies = [];
     gates = [];
     fx = [];
-    base.max = 420 + stage * 170;
+    base.max = 900 + stage * 280;   // much tougher base so a stage takes real time
     base.hp = base.max;
     life = 15;
     nextGateSpawn = now() + 300;
