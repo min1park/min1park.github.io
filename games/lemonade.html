@@ -135,13 +135,30 @@
 
   const W=420, H=560;
 
-  // ===== Menu (fixed prices) =====
+  // ===== Menu (3 price tiers each: 저렴 / 보통 / 비싸게) =====
   const MENU = [
-    { name:'레모네이드', icon:'🍋', price:1500 },
-    { name:'오렌지주스', icon:'🧃', price:2000 },
-    { name:'쿠키',       icon:'🍪', price:1000 },
-    { name:'컵케이크',   icon:'🧁', price:2500 },
-    { name:'프레첼',     icon:'🥨', price:1800 },
+    { name:'레모네이드', icon:'🍋', prices:[1000,1500,2000] },
+    { name:'오렌지주스', icon:'🧃', prices:[1500,2000,2500] },
+    { name:'쿠키',       icon:'🍪', prices:[ 800,1000,1500] },
+    { name:'컵케이크',   icon:'🧁', prices:[2000,2500,3000] },
+    { name:'프레첼',     icon:'🥨', prices:[1300,1800,2300] },
+  ];
+  // current price of a menu item given the day's chosen price tier
+  function price(mi){ return MENU[mi].prices[priceTier]; }
+
+  // ===== Weather (affects demand) =====
+  const WEATHERS = [
+    { key:'hot',   icon:'🔥', name:'매우 더움', demand:1.6, tip:'레모네이드가 잘 팔려요! 많이 만들까요?' },
+    { key:'sunny', icon:'☀️', name:'맑음',      demand:1.2, tip:'손님이 적당히 와요.' },
+    { key:'cloud', icon:'⛅', name:'흐림',      demand:1.0, tip:'평범한 날이에요.' },
+    { key:'cool',  icon:'🌥️', name:'쌀쌀함',   demand:0.8, tip:'손님이 조금 적을 수 있어요.' },
+    { key:'rain',  icon:'🌧️', name:'비',        demand:0.6, tip:'비 오는 날은 손님이 적어요. 적게 만들까요?' },
+  ];
+  // ===== Price policy (tier index -> demand factor) =====
+  const PRICE_TIERS = [
+    { label:'저렴하게', sub:'손님 많음·이익 적음', demand:1.4 },
+    { label:'보통',     sub:'적당해요',           demand:1.0 },
+    { label:'비싸게',   sub:'손님 적음·이익 큼',   demand:0.65 },
   ];
 
   // ===== Shop levels (volume + theme; prices come from MENU) =====
@@ -164,6 +181,7 @@
   let state='ready';
   let level=0, day=1, cash=5000, stock=5;
   let difficulty='easy';
+  let weather=null, priceTier=1, planMake=0;   // per-day morning choices
   let customers=[], fx=[];
   let dayStart=0, lastTs=0, lastSpawn=0, spawnGap=2000, raf=null;
   let revenueTrue=0, costTrue=0, leftToday=0, batchesToday=0, custToday=0;
@@ -191,7 +209,7 @@
     const chosen = idxs.slice(0, nTypes).sort((a,b)=>a-b);
     return chosen.map(mi => ({ mi, qty: ri(d.qty[0], d.qty[1]) }));
   }
-  function orderTotal(order){ return order.reduce((s,o)=>s + o.qty*MENU[o.mi].price, 0); }
+  function orderTotal(order){ return order.reduce((s,o)=>s + o.qty*price(o.mi), 0); }
   function orderCount(order){ return order.reduce((s,o)=>s + o.qty, 0); }
 
   // ===== Customer =====
@@ -202,7 +220,12 @@
     return { order, patience, born:now(), color:palette[(Math.random()*palette.length)|0],
              x:W/2, slot:0, done:false, leaving:false, leaveAt:0, doneAt:0, bob:Math.random()*7 };
   }
-  function spawnGapForLevel(){ return Math.max(2400, 4400 - level*250 + rnd(-400,400)); }
+  function spawnGapForLevel(){
+    const base = 4400 - level*250;                       // bigger shop = busier
+    const demand = (weather?weather.demand:1) * PRICE_TIERS[priceTier].demand;
+    const gap = base / Math.max(0.3, demand);            // more demand -> shorter gap
+    return Math.max(1500, gap + rnd(-400,400));
+  }
 
   // ===== Overlay =====
   function openOverlay(html){ card.innerHTML=html; overlay.classList.add('show'); }
@@ -211,23 +234,77 @@
   // ===== Flow =====
   function showStart(){
     state='ready'; updateHUD();
-    const menuHtml = MENU.map(m=>`<div class="mi"><span>${m.icon} ${m.name}</span><span class="pr">${fmt(m.price)}원</span></div>`).join('');
+    const menuHtml = MENU.map(m=>`<div class="mi"><span>${m.icon} ${m.name}</span><span class="pr">${fmt(m.prices[0])}~${fmt(m.prices[2])}원</span></div>`).join('');
     const diffHtml = Object.entries(DIFFS).map(([k,d])=>
       `<button class="diff-btn ${k===difficulty?'active':''}" data-d="${k}">${d.label}<small>${d.grade}</small></button>`).join('');
     openOverlay(`
       <div class="eyebrow">Ready</div>
       <h2>🍋 레모네이드 사장님</h2>
-      <p>손님 주문을 받아 <strong>거스름돈</strong>을 만들고,<br>하루가 끝나면 <strong>매출·비용·이익을 직접 계산</strong>해요.<br>돈을 모으면 가게가 <strong>업그레이드</strong>!</p>
+      <p>날씨를 보고 <strong>가격</strong>과 <strong>만들 양</strong>을 정해요.<br>손님 주문을 받아 <strong>거스름돈</strong>을 만들고,<br>마감에 <strong>매출·비용·이익을 직접 계산</strong>해요!</p>
       <div class="menu-list">${menuHtml}</div>
       <p style="margin-bottom:7px;font-weight:850;color:var(--ink)">난이도를 골라요</p>
       <div class="diff-row">${diffHtml}</div>
-      <button class="btn-main" id="startBtn">장사 시작</button>
+      <button class="btn-main" id="startBtn">다음 ▶</button>
     `);
     card.querySelectorAll('.diff-btn').forEach(b=>b.onclick=()=>{
       difficulty=b.dataset.d;
       card.querySelectorAll('.diff-btn').forEach(x=>x.classList.toggle('active',x.dataset.d===difficulty));
     });
-    $('startBtn').onclick=startDay;
+    $('startBtn').onclick=startMorning;
+  }
+
+  // ===== Morning planning: weather → price policy → production =====
+  function startMorning(){
+    state='morning';
+    // pick today's weather (weighted toward middle)
+    const r=Math.random();
+    weather = r<0.18?WEATHERS[0] : r<0.45?WEATHERS[1] : r<0.72?WEATHERS[2] : r<0.88?WEATHERS[3] : WEATHERS[4];
+    priceTier = 1;          // default 보통
+    planMake = level===0 && day===1 ? 2 : 0;   // suggest 2 batches on the very first day
+    renderMorning();
+  }
+
+  function renderMorning(){
+    const lv=L();
+    const priceHtml = PRICE_TIERS.map((p,i)=>
+      `<button class="diff-btn ${i===priceTier?'active':''}" data-p="${i}">${p.label}<small>${p.sub}</small></button>`).join('');
+    // sample price line so kids see what "저렴/보통/비싸게" means for one menu
+    const sample = MENU[0];
+    const cupsToMake = planMake*lv.batch;
+    const makeCost = planMake*lv.cost;
+    const afford = makeCost<=cash;
+    openOverlay(`
+      <div class="eyebrow">${day}일차 아침 · 장사 준비</div>
+      <h2>${weather.icon} ${weather.name}</h2>
+      <p style="margin-bottom:12px">${weather.tip}</p>
+
+      <p style="margin-bottom:6px;font-weight:850;color:var(--ink)">① 가격을 정해요 (${sample.icon} ${sample.name} 기준)</p>
+      <div class="diff-row" id="priceRow">${priceHtml}</div>
+      <div class="change-info" style="text-align:center;margin-bottom:12px">
+        ${sample.name} 한 잔 <strong>${fmt(sample.prices[priceTier])}원</strong> · ${PRICE_TIERS[priceTier].sub}
+      </div>
+
+      <p style="margin-bottom:6px;font-weight:850;color:var(--ink)">② 몇 개 만들까요? (지금 재고 ${stock}개)</p>
+      <div class="change-info" style="margin-bottom:8px">
+        <div class="ln"><span>만들 묶음</span>
+          <span style="display:flex;align-items:center;gap:10px">
+            <button class="key" id="mkMinus" style="padding:4px 12px;font-size:18px">−</button>
+            <b style="min-width:90px;text-align:center;display:inline-block">${planMake}묶음 (${cupsToMake}개)</b>
+            <button class="key" id="mkPlus" style="padding:4px 12px;font-size:18px">+</button>
+          </span></div>
+        <div class="ln tot"><span>재료비</span><span style="color:${afford?'var(--ink)':'var(--red)'}">${fmt(makeCost)}원</span></div>
+      </div>
+
+      <button class="btn-main" id="openShopBtn" ${afford?'':'disabled'}>장사 시작! 🛎️</button>
+      ${afford?'':'<p style="font-size:12px;color:var(--red);font-weight:800;margin-top:8px">돈이 부족해요. 만들 양을 줄이세요.</p>'}
+    `);
+    card.querySelectorAll('#priceRow .diff-btn').forEach(b=>b.onclick=()=>{ priceTier=+b.dataset.p; renderMorning(); });
+    $('mkMinus').onclick=()=>{ planMake=Math.max(0,planMake-1); renderMorning(); };
+    $('mkPlus').onclick=()=>{
+      const maxAffordable=Math.floor(cash/lv.cost);
+      planMake=Math.min(maxAffordable, planMake+1); renderMorning();
+    };
+    $('openShopBtn').onclick=startDay;
   }
 
   function startDay(){
@@ -235,6 +312,13 @@
     customers=[]; fx=[];
     revenueTrue=0; costTrue=0; leftToday=0; batchesToday=0; custToday=0;
     soldByMenu=[0,0,0,0,0];
+    // apply morning production (counts toward today's cost & batches)
+    if(planMake>0){
+      const lv=L();
+      cash -= planMake*lv.cost; costTrue += planMake*lv.cost;
+      stock += planMake*lv.batch; batchesToday += planMake;
+      planMake=0;
+    }
     dayStart=now(); lastTs=now(); lastSpawn=0; spawnGap=spawnGapForLevel();
     if(!raf) raf=requestAnimationFrame(loop);
     setHint('손님 주문을 받아 거스름돈을 만들어 주세요');
@@ -260,8 +344,8 @@
     const sum=change.tray.reduce((s,v)=>s+v,0);
     const c=change.cust;
     const itemsHtml = c.order.map(o=>{
-      const m=MENU[o.mi];
-      return `<div class="ln"><span>${m.icon} ${m.name} ${o.qty}개 × ${fmt(m.price)}원</span><span>${fmt(o.qty*m.price)}원</span></div>`;
+      const m=MENU[o.mi], p=price(o.mi);
+      return `<div class="ln"><span>${m.icon} ${m.name} ${o.qty}개 × ${fmt(p)}원</span><span>${fmt(o.qty*p)}원</span></div>`;
     }).join('');
     const trayHtml = change.tray.length
       ? change.tray.map((v,i)=>`<span class="chip" data-ti="${i}">${fmt(v)}</span>`).join('')
@@ -325,10 +409,10 @@
 
   function renderLedger(){
     const lv=L();
-    const revenue = soldByMenu.reduce((s,q,i)=>s + q*MENU[i].price, 0);
+    const revenue = soldByMenu.reduce((s,q,i)=>s + q*price(i), 0);
     // revenue breakdown rows (only menus actually sold)
     const rows = MENU.map((m,i)=> soldByMenu[i]>0
-      ? `${m.icon} ${soldByMenu[i]}개 × ${fmt(m.price)}원 = ${fmt(soldByMenu[i]*m.price)}원` : null)
+      ? `${m.icon} ${soldByMenu[i]}개 × ${fmt(price(i))}원 = ${fmt(soldByMenu[i]*price(i))}원` : null)
       .filter(Boolean).join('<br>');
     const costFormula = batchesToday>0
       ? `재료 만든 횟수 × 한 번 재료비<br><strong>${batchesToday}번 × ${fmt(lv.cost)}원</strong>`
@@ -375,7 +459,7 @@
     }
   }
   function finishLedger(){
-    const revenue=soldByMenu.reduce((s,q,i)=>s+q*MENU[i].price,0);
+    const revenue=soldByMenu.reduce((s,q,i)=>s+q*price(i),0);
     const profit=revenue-costTrue;
     state='result';
     const nextLv=level<LEVELS.length-1?LEVELS[level+1]:null;
@@ -395,7 +479,7 @@
             : `<p style="font-size:12px;color:var(--gold);font-weight:850;margin-bottom:8px">🏆 최고 등급 럭셔리 가게!</p><button class="btn-main" id="contBtn">다음 날 ▶</button>`)}
     `);
     if(canUp) $('upBtn').onclick=doUpgrade;
-    $('contBtn').onclick=()=>{ day++; startDay(); };
+    $('contBtn').onclick=()=>{ day++; startMorning(); };
   }
   function doUpgrade(){
     level++; state='upgrade'; const lv=L();
@@ -405,7 +489,7 @@
       <p>축하해요! 가게가 <strong>${lv.name}</strong>(으)로 커졌어요!<br><br>이제 한 번에 <strong>${lv.batch}개</strong>까지 만들 수 있고,<br>손님도 더 많이 와요!</p>
       <button class="btn-main" id="upContBtn">다음 날 ▶</button>
     `);
-    $('upContBtn').onclick=()=>{ day++; startDay(); };
+    $('upContBtn').onclick=()=>{ day++; startMorning(); };
     updateHUD();
   }
 
@@ -470,6 +554,11 @@
       ctx.fillStyle='#D4A843'; ctx.fillRect(12,12,(W-24)*ratio,7);
       ctx.fillStyle=level>=5?'#fff':'#0A0A0A'; ctx.font='900 11px system-ui'; ctx.textAlign='right'; ctx.textBaseline='top';
       ctx.fillText('⏱ '+Math.ceil(Math.max(0,DAY_SECONDS-elapsed))+'초', W-14, 22);
+      // today's weather + price policy reminder (top-left)
+      if(weather){
+        ctx.textAlign='left';
+        ctx.fillText(weather.icon+' '+weather.name+' · 가격 '+PRICE_TIERS[priceTier].label, 14, 22);
+      }
     }
   }
   function drawCustomer(c,ts){
