@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>min1park · classic games</title>
+
+<!-- PWA -->
+<link rel="manifest" href="/games/manifest.json">
+<meta name="theme-color" content="#1B365D">
+<link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Classic Games">
+<meta name="mobile-web-app-capable" content="yes">
+
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #1a2740;
+    --gold: #c9a96a;
+    --cream: #f5efe0;
+    --ink: #2a2a2a;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'EB Garamond', Georgia, serif;
+    background: var(--cream);
+    color: var(--ink);
+    min-height: 100vh;
+    padding: 48px 24px;
+  }
+  .wrap { max-width: 720px; margin: 0 auto; }
+  header { text-align: center; margin-bottom: 56px; }
+  h1 {
+    font-size: 42px;
+    font-weight: 500;
+    color: var(--navy);
+    letter-spacing: 0.5px;
+    margin-bottom: 12px;
+  }
+  .subtitle {
+    font-style: italic;
+    color: var(--navy);
+    opacity: 0.7;
+    font-size: 18px;
+  }
+  .divider {
+    width: 60px;
+    height: 2px;
+    background: var(--gold);
+    margin: 24px auto;
+  }
+  .games {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+  }
+  .game-card {
+    background: white;
+    border: 1px solid rgba(26, 39, 64, 0.12);
+    border-radius: 4px;
+    padding: 20px 24px;
+    text-decoration: none;
+    color: var(--ink);
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .game-card:hover {
+    border-color: var(--gold);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(26, 39, 64, 0.08);
+  }
+  .num {
+    font-size: 14px;
+    color: var(--gold);
+    font-weight: 600;
+    font-variant: small-caps;
+    letter-spacing: 1px;
+    min-width: 32px;
+  }
+  .title {
+    font-size: 20px;
+    font-weight: 500;
+    color: var(--navy);
+  }
+  .desc {
+    font-size: 13px;
+    color: var(--ink);
+    opacity: 0.6;
+    font-style: italic;
+    margin-top: 2px;
+  }
+  footer {
+    text-align: center;
+    margin-top: 64px;
+    font-size: 13px;
+    color: var(--navy);
+    opacity: 0.5;
+    font-style: italic;
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>Classic Games</h1>
+      <div class="divider"></div>
+      <div class="subtitle">nineteen timeless games, reimagined in the browser</div>
+    </header>
+
+    <div class="games">
+      <a href="tic-tac-toe.html" class="game-card">
+        <div class="num">01</div>
+        <div><div class="title">Tic-Tac-Toe</div><div class="desc">틱택토</div></div>
+      </a>
+      <a href="memory-card.html" class="game-card">
+        <div class="num">02</div>
+        <div><div class="title">Memory</div><div class="desc">카드 짝맞추기</div></div>
+      </a>
+      <a href="2048.html" class="game-card">
+        <div class="num">03</div>
+        <div><div class="title">2048</div><div class="desc">숫자 합치기</div></div>
+      </a>
+      <a href="snake.html" class="game-card">
+        <div class="num">04</div>
+        <div><div class="title">Snake</div><div class="desc">스네이크</div></div>
+      </a>
+      <a href="breakout.html" class="game-card">
+        <div class="num">05</div>
+        <div><div class="title">Breakout</div><div class="desc">벽돌깨기</div></div>
+      </a>
+      <a href="minesweeper.html" class="game-card">
+        <div class="num">06</div>
+        <div><div class="title">Minesweeper</div><div class="desc">지뢰찾기</div></div>
+      </a>
+      <a href="tetris.html" class="game-card">
+        <div class="num">07</div>
+        <div><div class="title">Tetris</div><div class="desc">테트리스</div></div>
+      </a>
+      <a href="whack-a-mole.html" class="game-card">
+        <div class="num">08</div>
+        <div><div class="title">Whack-a-Mole</div><div class="desc">두더지잡기</div></div>
+      </a>
+      <a href="sudoku.html" class="game-card">
+        <div class="num">09</div>
+        <div><div class="title">Sudoku</div><div class="desc">스도쿠</div></div>
+      </a>
+      <a href="space-invaders.html" class="game-card">
+        <div class="num">10</div>
+        <div><div class="title">Space Invaders</div><div class="desc">스페이스 인베이더</div></div>
+      </a>
+      <a href="omok.html" class="game-card">
+        <div class="num">11</div>
+        <div><div class="title">Omok</div><div class="desc">오목</div></div>
+      </a>
+      <a href="territory.html" class="game-card">
+        <div class="num">12</div>
+        <div><div class="title">Territory</div><div class="desc">땅따먹기</div></div>
+      </a>
+      <a href="chess.html" class="game-card">
+        <div class="num">13</div>
+        <div><div class="title">Chess</div><div class="desc">체스</div></div>
+      </a>
+      <a href="janggi.html" class="game-card">
+        <div class="num">14</div>
+        <div><div class="title">Janggi</div><div class="desc">장기</div></div>
+      </a>
+      <a href="cascade.html" class="game-card">
+        <div class="num">15</div>
+        <div><div class="title">Cascade</div><div class="desc">캐스케이드</div></div>
+      </a>
+      <a href="othello.html" class="game-card">
+        <div class="num">16</div>
+        <div><div class="title">Othello</div><div class="desc">오델로</div></div>
+      </a>
+      <a href="math-gates.html" class="game-card">
+        <div class="num">17</div>
+        <div><div class="title">Math Gates</div><div class="desc">수학 게이트</div></div>
+      </a>
+      <a href="math-defender.html" class="game-card">
+        <div class="num">18</div>
+        <div><div class="title">Math Defender</div><div class="desc">수학 디펜더</div></div>
+      </a>
+      <a href="lemonade.html" class="game-card">
+        <div class="num">19</div>
+        <div><div class="title">Lemonade Stand</div><div class="desc">레모네이드 사장님</div></div>
+      </a>
+    </div>
+
+    <footer>
+      &mdash; min1park &mdash;
+    </footer>
+  </div>
+
+<script>
+  // Register the service worker so the site works offline and can be installed.
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/games/service-worker.js').catch(err => {
+        console.warn('Service worker registration failed:', err);
+      });
+    });
+  }
+</script>
+</body>
+</html>
